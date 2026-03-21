@@ -122,5 +122,43 @@
     "emergency_fund_weeks": 6,
     "debt_to_income_threshold": 0.4,
     "recovery_rate": 0.3
+  },
+  "jump_parameters": {
+    "monthly_jump_probability": 0.25,
+    "jump_mean_multiplier": -0.15,
+    "jump_sigma_multiplier": 0.22,
+    "jump_echo_decay": 1.0,
+    "description": "Income shock parameters for jump-diffusion model (to be calibrated from empirical data)"
+  },
+  "default_detection": {
+    "rolling_window_months": 3,
+    "cash_flow_threshold_multiplier": -1.5,
+    "buffer_threshold_multiplier": 1.0,
+    "description": "Default trigger thresholds - borrower defaults when 3-month rolling cash flow < -1.5x payment AND buffer < 1.0x payment"
+  },
+  "risk_tiers": {
+    "prime": {
+      "threshold": 0.04,
+      "description": "Low risk - P(default) < 4%"
+    },
+    "near_prime": {
+      "threshold": 0.08,
+      "description": "Medium risk - P(default) < 8%"
+    },
+    "subprime": {
+      "threshold": 0.15,
+      "description": "High risk - P(default) < 15%"
+    },
+    "decline": {
+      "threshold": 1.0,
+      "description": "Too high risk - P(default) >= 15%"
+    }
+  },
+  "loan_sweep_grid": {
+    "amount_multipliers": [0.25, 0.5, 0.75, 1.0, 1.25],
+    "term_months": [12, 24, 36, 48],
+    "annual_rates": [0.08, 0.12, 0.16, 0.20, 0.24],
+    "approval_threshold": 0.08,
+    "description": "Grid search parameters for optimal loan structure"
   }
 }
