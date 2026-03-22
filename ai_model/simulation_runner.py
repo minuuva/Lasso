@@ -186,6 +186,10 @@ class SimulationRunner:
         )
 
         merged_ai = self._build_merged_ai_scenario(scenario, customer_app, time_horizon)
+
+        # Inject user's life shocks into the trajectory for display
+        if merged_ai:
+            trajectory = self._inject_user_events_into_trajectory(trajectory, merged_ai)
         print(f"[DEBUG] Raw scenario dict: {scenario}")
         print(f"[DEBUG] Merged AI scenario: {merged_ai}")
         if merged_ai is not None:
@@ -248,23 +252,117 @@ class SimulationRunner:
     def _apply_custom_params(self, archetype: dict, custom_params: dict) -> dict:
         """Apply custom parameter overrides to archetype."""
         archetype = archetype.copy()
-        
+
         if "skill_growth_rate" in custom_params:
             archetype["skill_growth_rate"] = custom_params["skill_growth_rate"]
-        
+
         if "platform_add_rate" in custom_params:
             archetype["platform_add_rate"] = custom_params["platform_add_rate"]
-        
+
         if "platforms" in custom_params:
             archetype["platforms"] = custom_params["platforms"]
-        
+
         if "hours_per_week" in custom_params:
             archetype["hours_per_week"] = custom_params["hours_per_week"]
-        
+
         if "emergency_fund_weeks" in custom_params:
             archetype["emergency_fund_weeks"] = custom_params["emergency_fund_weeks"]
-        
+
         return archetype
+
+    def _inject_user_events_into_trajectory(
+        self,
+        trajectory: LifeTrajectory,
+        ai_scenario: Dict[str, Any]
+    ) -> LifeTrajectory:
+        """
+        Inject user-specified life shocks into the trajectory for display.
+
+        This ensures the trajectory shown to users reflects their specified
+        life events, not just randomly sampled ones.
+        """
+        from life_simulation.models import LifeEvent, EventType
+
+        user_events = []
+
+        # Convert discrete_jumps to LifeEvents
+        for jump in ai_scenario.get("discrete_jumps", []):
+            month = jump.get("month", 0)
+            income_impact = jump.get("income_delta", 0)
+            expense_impact = jump.get("expense_delta", 0)
+            description = jump.get("label", "User-specified event")
+
+            # Determine event type based on impacts
+            if income_impact < -500:
+                event_type = EventType.HEALTH_MAJOR_ILLNESS
+            elif income_impact < 0:
+                event_type = EventType.VEHICLE_MINOR_REPAIR
+            elif expense_impact > 500:
+                event_type = EventType.HOUSING_EMERGENCY_REPAIR
+            elif expense_impact > 0:
+                event_type = EventType.HOUSING_RENT_INCREASE
+            else:
+                event_type = EventType.POSITIVE_SIDE_GIG
+
+            user_events.append(LifeEvent(
+                event_type=event_type,
+                month=month,
+                income_impact=income_impact,
+                expense_impact=-expense_impact,  # Expenses are negative in LifeEvent
+                duration_months=1,
+                description=description
+            ))
+
+        # Convert parameter_shifts to LifeEvents
+        for shift in ai_scenario.get("parameter_shifts", []):
+            month = shift.get("start_month", 0)
+            duration = shift.get("duration_months", 1)
+            mu_mult = shift.get("mu_multiplier", 1.0)
+            sigma_mult = shift.get("sigma_multiplier", 1.0)
+            expense_mult = shift.get("expense_multiplier", 1.0)
+
+            # Determine event type and impact based on multipliers
+            if mu_mult < 0.8:
+                event_type = EventType.HEALTH_MAJOR_ILLNESS
+                description = f"Major income disruption (Month {month}-{month+duration})"
+                income_impact = -1000 * (1 - mu_mult)
+            elif mu_mult < 1.0:
+                event_type = EventType.PLATFORM_MARKET_SATURATION
+                description = f"Reduced earnings (Month {month}-{month+duration})"
+                income_impact = -500 * (1 - mu_mult)
+            elif expense_mult > 1.2:
+                event_type = EventType.HOUSING_RENT_INCREASE
+                description = f"Increased expenses (Month {month}-{month+duration})"
+                income_impact = 0
+            else:
+                event_type = EventType.POSITIVE_SKILL_UPGRADE
+                description = f"Positive change (Month {month}-{month+duration})"
+                income_impact = 500 * (mu_mult - 1)
+
+            user_events.append(LifeEvent(
+                event_type=event_type,
+                month=month,
+                income_impact=income_impact,
+                expense_impact=0,
+                duration_months=duration,
+                description=description
+            ))
+
+        # Add user events to trajectory
+        if user_events:
+            # Sort all events by month
+            all_events = trajectory.events + user_events
+            all_events.sort(key=lambda e: e.month)
+            trajectory.events = all_events
+
+            # Update narrative to include user events
+            user_narrative = ai_scenario.get("narrative", "")
+            if user_narrative and trajectory.narrative:
+                trajectory.narrative = f"{trajectory.narrative} | User scenario: {user_narrative}"
+            elif user_narrative:
+                trajectory.narrative = user_narrative
+
+        return trajectory
 
     @staticmethod
     def _sanitize_ai_scenario_dict(raw: Dict[str, Any], horizon_months: int) -> Dict[str, Any]:
