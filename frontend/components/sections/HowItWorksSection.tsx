@@ -140,7 +140,7 @@ export function HowItWorksSection() {
       </h2>
 
       {/* Two-column layout */}
-      <div className="grid lg:grid-cols-2 gap-12 items-start max-w-7xl">
+      <div className="grid lg:grid-cols-2 gap-12 items-start w-full">
         {/* Paths visualization - in glass card */}
         <div ref={vizRef} className="order-2 lg:order-1">
           <div className="glass-card-premium p-6 md:p-8">

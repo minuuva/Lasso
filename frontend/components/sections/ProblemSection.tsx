@@ -117,7 +117,7 @@ export function ProblemSection() {
       </p>
 
       {/* Income Chart - in a glass card */}
-      <div ref={chartRef} className="max-w-4xl mb-12">
+      <div ref={chartRef} className="w-full mb-12">
         <div className="glass-card-premium p-8">
           <IncomeChart />
         </div>
@@ -126,7 +126,7 @@ export function ProblemSection() {
       {/* Stats row - Tempo numbered style */}
       <div
         ref={statsRef}
-        className="grid grid-cols-1 md:grid-cols-3 gap-0 max-w-4xl"
+        className="grid grid-cols-1 md:grid-cols-3 gap-0 w-full"
       >
         {/* Stat 1: Volatility */}
         <div className="numbered-card" data-number="01">

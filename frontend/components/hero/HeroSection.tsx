@@ -47,16 +47,12 @@ const atmosphereFragmentShader = `
     float intensity = pow(0.7 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 3.0);
     float pulse = 0.92 + 0.08 * sin(uTime * 0.3);
 
-    // More sophisticated color gradient
-    vec3 innerColor = vec3(1.0, 0.65, 0.3);  // Warm amber
-    vec3 outerColor = vec3(1.0, 0.35, 0.15); // Deep orange
-    vec3 glowColor = mix(innerColor, outerColor, intensity * 0.6);
+    // Warm amber gradient - no blue tint
+    vec3 innerColor = vec3(1.0, 0.6, 0.25);  // Warm amber
+    vec3 outerColor = vec3(0.9, 0.4, 0.15);  // Deep orange
+    vec3 glowColor = mix(innerColor, outerColor, intensity * 0.5);
 
-    // Add subtle blue tint at edges
-    vec3 edgeColor = vec3(0.4, 0.5, 0.9);
-    glowColor = mix(glowColor, edgeColor, pow(intensity, 3.0) * 0.15);
-
-    gl_FragColor = vec4(glowColor * intensity * pulse, intensity * 0.7);
+    gl_FragColor = vec4(glowColor * intensity * pulse, intensity * 0.5);
   }
 `;
 
@@ -187,9 +183,9 @@ function ParticleGlobe() {
       <mesh ref={innerGlobeRef} scale={[0.98, 0.98, 0.98]}>
         <sphereGeometry args={[radius, 64, 64]} />
         <meshBasicMaterial
-          color="#1a1a2e"
+          color="#1a1410"
           transparent
-          opacity={0.04}
+          opacity={0.15}
         />
       </mesh>
 
@@ -210,44 +206,20 @@ function ParticleGlobe() {
         />
       </points>
 
-      {/* Metro hotspots - refined pulsing dots */}
+      {/* Metro hotspots - simple small dots only */}
       {metroPositions.map((pos, i) => (
         <group key={i} position={pos}>
-          {/* Outer glow ring */}
-          <mesh rotation={[Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[0.06, 0.11, 32]} />
-            <meshBasicMaterial
-              color="#ff9f40"
-              transparent
-              opacity={0.35}
-              side={THREE.DoubleSide}
-              blending={THREE.AdditiveBlending}
-            />
-          </mesh>
-          {/* Secondary glow */}
-          <mesh rotation={[Math.PI / 2, 0, 0]}>
-            <ringGeometry args={[0.1, 0.16, 32]} />
-            <meshBasicMaterial
-              color="#ffcc80"
-              transparent
-              opacity={0.15}
-              side={THREE.DoubleSide}
-              blending={THREE.AdditiveBlending}
-            />
-          </mesh>
-          {/* Inner bright dot */}
           <mesh ref={(el) => { if (el) hotspotRefs.current[i] = el; }}>
-            <sphereGeometry args={[1, 16, 16]} />
-            <meshBasicMaterial color="#ffd699" transparent opacity={1} />
+            <sphereGeometry args={[0.04, 12, 12]} />
+            <meshBasicMaterial
+              color="#ffd699"
+              transparent
+              opacity={0.9}
+              blending={THREE.AdditiveBlending}
+            />
           </mesh>
         </group>
       ))}
-
-      {/* Bezier arcs connecting metros */}
-      <BezierArcs positions={metroPositions} />
-
-      {/* Orbital rings */}
-      <OrbitalRings radius={radius} />
     </group>
   );
 }
@@ -572,17 +544,12 @@ export function HeroSection() {
             </div>
           </nav>
 
-          <div className="flex items-center gap-4">
-            <a href="#" className="hidden md:block text-white/50 hover:text-white text-sm font-medium transition-colors">
-              Login
-            </a>
-            <Link
-              href="/simulate"
-              className="px-5 py-2.5 bg-white text-black text-sm font-semibold rounded-full hover:bg-white/90 transition-all duration-300 hover:scale-[1.02]"
-            >
-              Risk Console
-            </Link>
-          </div>
+          <Link
+            href="/simulate"
+            className="px-5 py-2.5 bg-white text-black text-sm font-semibold rounded-full hover:bg-white/90 transition-all duration-300 hover:scale-[1.02]"
+          >
+            Risk Console
+          </Link>
         </header>
 
         {/* Main content */}
@@ -603,15 +570,15 @@ export function HeroSection() {
               {/* Headline - Tempo + Reflect style */}
               <h1
                 ref={headlineRef}
-                className="font-display text-[clamp(3rem,8vw,5.5rem)] font-bold leading-[0.92] tracking-[-0.04em] mb-8"
+                className="font-sans text-[clamp(3rem,8vw,5.5rem)] font-bold leading-[1.1] tracking-[-0.02em] mb-8"
               >
                 <span className="block text-gradient-accent drop-shadow-[0_0_60px_rgba(255,159,64,0.25)]">
-                  Underwrite gig
+                  Underwrite
                 </span>
                 <span className="block text-gradient-accent drop-shadow-[0_0_60px_rgba(255,159,64,0.25)]">
-                  workers with
+                  gig workers
                 </span>
-                <span className="block text-white mt-2 text-[0.85em]">confidence.</span>
+                <span className="block text-white mt-2 text-[0.85em]">with confidence.</span>
               </h1>
 
               {/* Subtitle - improved hierarchy */}
@@ -661,11 +628,11 @@ export function HeroSection() {
                 </div>
               )}
 
-              {/* Floating Glass Cards - positioned outside globe area */}
+              {/* Floating Glass Cards - positioned symmetrically around globe */}
               <div className="absolute inset-0 pointer-events-none z-10">
-                {/* Card 1: Applicant Assessment - positioned to left of globe */}
+                {/* Card 1: Applicant Assessment - upper left of globe */}
                 <GlassCard
-                  className="absolute top-[8%] -left-[15%] w-[220px] animate-float pointer-events-auto"
+                  className="absolute top-[5%] left-0 w-[190px] animate-float pointer-events-auto"
                   delay={0}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -684,13 +651,13 @@ export function HeroSection() {
                   </div>
                 </GlassCard>
 
-                {/* Card 2: Risk Assessment - positioned to right of globe */}
+                {/* Card 2: Risk Assessment - upper right of globe */}
                 <GlassCard
-                  className="absolute top-[35%] -right-[10%] w-[200px] animate-float-delayed pointer-events-auto"
+                  className="absolute top-[0%] left-[68%] w-[190px] animate-float-delayed pointer-events-auto !bg-black/70 !border-white/20"
                   delay={0.15}
                 >
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-medium uppercase tracking-widest text-white/40">
+                    <span className="text-[10px] font-medium uppercase tracking-widest text-white/70">
                       Risk Analysis
                     </span>
                   </div>
@@ -699,16 +666,16 @@ export function HeroSection() {
                       <div className="absolute inset-0 rounded-full bg-amber-400 animate-ping opacity-50" />
                       <div className="absolute inset-0 rounded-full bg-amber-400" />
                     </div>
-                    <span className="text-[11px] text-white/60 font-medium">
+                    <span className="text-[11px] text-white font-medium">
                       Running 5,000 paths
                     </span>
                   </div>
                   <MiniFanChart />
                 </GlassCard>
 
-                {/* Card 3: Stress Test Results - positioned below left */}
+                {/* Card 3: Stress Test Results - bottom left of globe */}
                 <GlassCard
-                  className="absolute bottom-[12%] -left-[10%] w-[220px] animate-float-delayed-2 pointer-events-auto"
+                  className="absolute top-[42%] left-[0%] w-[190px] animate-float-delayed-2 pointer-events-auto"
                   delay={0.3}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -781,13 +748,6 @@ export function HeroSection() {
           </div>
         </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-28 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-30">
-          <span className="text-[9px] text-white/50 uppercase tracking-[0.2em] font-medium">
-            Scroll
-          </span>
-          <div className="w-px h-10 bg-gradient-to-b from-white/30 to-transparent" />
-        </div>
       </section>
     </>
   );
