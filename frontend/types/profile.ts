@@ -3,7 +3,7 @@
  */
 export enum Platform {
   UBER_RIDESHARE = "uber_rideshare",
-  UBER_EATS = "uber_eats",
+  UBER_EATS = "ubereats",
   DOORDASH = "doordash",
   INSTACART = "instacart",
   LYFT = "lyft",
