@@ -11,6 +11,14 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
   const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
+    // Disable browser scroll restoration
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
+
+    // Force scroll to top on page load
+    window.scrollTo(0, 0);
+
     // Initialize Lenis
     lenisRef.current = new Lenis({
       duration: 1.2,
@@ -21,6 +29,9 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
       touchMultiplier: 2,
     });
 
+    // Scroll Lenis to top as well
+    lenisRef.current.scrollTo(0, { immediate: true });
+
     // Connect Lenis to GSAP ScrollTrigger
     lenisRef.current.on("scroll", ScrollTrigger.update);
 
@@ -29,6 +40,11 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
     });
 
     gsap.ticker.lagSmoothing(0);
+
+    // Refresh ScrollTrigger after a brief delay to ensure correct calculations
+    setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 100);
 
     return () => {
       lenisRef.current?.destroy();
