@@ -386,7 +386,36 @@ export default function SimulateHub() {
 
     setExtractedParams(newParams);
 
-    // Create a summary message of what was answered
+    // Create a summary message of what was answered with friendly labels
+    const friendlyLabels: Record<string, string> = {
+      platforms: "Platforms",
+      hoursPerWeek: "Hours per week",
+      metroArea: "Location",
+      monthsExperience: "Experience",
+      hasVehicle: "Has vehicle",
+      hasDependents: "Has dependents",
+      liquidSavings: "Savings",
+      monthlyExpenses: "Monthly expenses",
+      existingDebt: "Existing debt",
+      loanAmount: "Loan amount",
+      loanTermMonths: "Loan term",
+    };
+
+    const formatValue = (key: string, value: unknown): string => {
+      if (Array.isArray(value)) return value.join(", ");
+      if (typeof value === "boolean") return value ? "Yes" : "No";
+      if (typeof value === "number") {
+        if (key.includes("Amount") || key.includes("Savings") || key.includes("Expenses") || key.includes("Debt")) {
+          return `$${value.toLocaleString()}`;
+        }
+        if (key.includes("months") || key === "monthsExperience") {
+          return `${value} months`;
+        }
+        return String(value);
+      }
+      return String(value);
+    };
+
     const answeredKeys = Object.keys(pendingAnswers).filter(
       (k) => pendingAnswers[k] !== null && pendingAnswers[k] !== undefined
     );
@@ -395,7 +424,11 @@ export default function SimulateHub() {
       const answerMessage: Message = {
         id: generateId(),
         role: "user",
-        content: answeredKeys.map((k) => `${k}: ${JSON.stringify(pendingAnswers[k])}`).join("\n"),
+        content: answeredKeys.map((k) => {
+          const label = friendlyLabels[k] || k;
+          const value = formatValue(k, pendingAnswers[k]);
+          return `${label}: ${value}`;
+        }).join("\n"),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, answerMessage]);
@@ -520,25 +553,33 @@ export default function SimulateHub() {
     const hoursPerPlatform = platforms.length > 0 ? (params.hoursPerWeek || 0) / platforms.length : 0;
     const tenure = params.monthsExperience || 0;
 
-    // Map platform display names to snake_case backend names
+    // Map platform names to snake_case backend names (case-insensitive)
     const platformNameMap: Record<string, string> = {
-      "Uber": "uber",
-      "Lyft": "lyft",
-      "DoorDash": "doordash",
-      "UberEats": "uber_eats",
-      "Instacart": "instacart",
-      "Grubhub": "grubhub",
-      "Postmates": "postmates",
-      "Amazon Flex": "amazon_flex",
-      "Shipt": "shipt",
-      "TaskRabbit": "taskrabbit",
+      "uber": "uber",
+      "lyft": "lyft",
+      "doordash": "doordash",
+      "ubereats": "uber_eats",
+      "uber eats": "uber_eats",
+      "uber_eats": "uber_eats",
+      "instacart": "instacart",
+      "grubhub": "grubhub",
+      "postmates": "postmates",
+      "amazon flex": "amazon_flex",
+      "amazonflex": "amazon_flex",
+      "shipt": "shipt",
+      "taskrabbit": "taskrabbit",
+      "task rabbit": "taskrabbit",
     };
 
-    const platformsAndHours = platforms.map((p) => [
-      platformNameMap[p] || p.toLowerCase().replace(/\s+/g, "_"),
-      hoursPerPlatform,
-      tenure,
-    ]);
+    const platformsAndHours = platforms.map((p) => {
+      const normalized = p.toLowerCase().trim();
+      const mapped = platformNameMap[normalized];
+      return [
+        mapped || normalized.replace(/\s+/g, "_"),
+        hoursPerPlatform,
+        tenure,
+      ];
+    });
 
     // Build the CustomerApplication format
     const customerApplication = {
