@@ -46,92 +46,66 @@ type ApplicantAiBundle = {
 };
 
 /**
- * Convert AI-generated summary text into structured markdown with sections and bullet points.
+ * Parse AI summary into structured sections with bullets.
+ * Returns an object with categorized content.
  */
-function formatSummaryText(text: string): string {
-  // Split into sentences for processing
-  const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
+function parseAiSummary(text: string): {
+  overview: string[];
+  defaultAnalysis: string[];
+  incomeAnalysis: string[];
+  lifeEvents: string[];
+  positiveFactors: string[];
+  riskDrivers: string[];
+  resilience: string[];
+} {
+  const result = {
+    overview: [] as string[],
+    defaultAnalysis: [] as string[],
+    incomeAnalysis: [] as string[],
+    lifeEvents: [] as string[],
+    positiveFactors: [] as string[],
+    riskDrivers: [] as string[],
+    resilience: [] as string[],
+  };
 
-  const sections: { title: string; bullets: string[] }[] = [];
-  let currentSection: { title: string; bullets: string[] } | null = null;
-
-  // Define section triggers and their display titles
-  const sectionTriggers: Array<{ pattern: RegExp; title: string }> = [
-    { pattern: /^This applicant presents/i, title: "Risk Profile Overview" },
-    { pattern: /^The default probability|^A.*default probability/i, title: "Default Risk Analysis" },
-    { pattern: /^Income analysis|^The income range|median monthly earnings/i, title: "Income Analysis" },
-    { pattern: /^The simulation identified|^Month \d+|life events|deactivation/i, title: "Life Events Impact" },
-    { pattern: /^Positive developments|platform diversification|skill growth/i, title: "Positive Factors" },
-    { pattern: /^Key risk drivers|risk drivers include/i, title: "Key Risk Drivers" },
-    { pattern: /^The combination of|unsustainable|payment scenario/i, title: "Risk Assessment" },
-    { pattern: /^While the applicant|emergency fund|buffer/i, title: "Financial Resilience" },
-  ];
+  // Split into sentences
+  const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 10);
 
   for (const sentence of sentences) {
-    const trimmed = sentence.trim();
-    if (!trimmed) continue;
+    const s = sentence.trim();
 
-    // Check if this sentence starts a new section
-    let matchedSection: string | null = null;
-    for (const trigger of sectionTriggers) {
-      if (trigger.pattern.test(trimmed)) {
-        matchedSection = trigger.title;
-        break;
-      }
-    }
-
-    if (matchedSection) {
-      // Check if we already have a section with this title
-      const existingSection = sections.find(s => s.title === matchedSection);
-      if (existingSection) {
-        currentSection = existingSection;
+    // Categorize each sentence
+    if (/presents.*profile|HIGH_RISK|LOW_RISK|MEDIUM_RISK|risk tier/i.test(s)) {
+      result.overview.push(s);
+    } else if (/default probability|probability of \d+|time-to-default|cannot maintain/i.test(s)) {
+      result.defaultAnalysis.push(s);
+    } else if (/income|earnings|monthly.*\$|median.*\$|\$[\d,]+.*month|volatility|CV=/i.test(s)) {
+      result.incomeAnalysis.push(s);
+    } else if (/month \d+|deactivation|platform.*event|life event|forced move|reactivation/i.test(s)) {
+      result.lifeEvents.push(s);
+    } else if (/positive|diversification|skill growth|improvement|platform.*add/i.test(s)) {
+      result.positiveFactors.push(s);
+    } else if (/risk driver|concentration|debt burden|vulnerability|\(1\)|\(2\)|\(3\)/i.test(s)) {
+      // Handle inline numbering
+      const numberedMatch = s.match(/:\s*\(1\)\s*([^,]+),?\s*\(2\)\s*([^,]+),?\s*(?:and\s*)?\(3\)\s*([^.]+)/i);
+      if (numberedMatch) {
+        result.riskDrivers.push(numberedMatch[1].trim());
+        result.riskDrivers.push(numberedMatch[2].trim());
+        result.riskDrivers.push(numberedMatch[3].trim());
       } else {
-        currentSection = { title: matchedSection, bullets: [] };
-        sections.push(currentSection);
+        result.riskDrivers.push(s);
       }
-    }
-
-    // If no current section, create a general one
-    if (!currentSection) {
-      currentSection = { title: "Summary", bullets: [] };
-      sections.push(currentSection);
-    }
-
-    // Convert inline numbering to separate bullets
-    const numberedMatch = trimmed.match(/:\s*\(1\)\s*([^,]+),?\s*\(2\)\s*([^,]+),?\s*(?:and\s*)?\(3\)\s*([^.]+)/i);
-    if (numberedMatch) {
-      const prefix = trimmed.split(/:\s*\(1\)/)[0];
-      if (prefix) currentSection.bullets.push(prefix + ":");
-      currentSection.bullets.push(numberedMatch[1].trim());
-      currentSection.bullets.push(numberedMatch[2].trim());
-      currentSection.bullets.push(numberedMatch[3].trim());
+    } else if (/emergency fund|buffer|savings|resilience|while the applicant/i.test(s)) {
+      result.resilience.push(s);
+    } else if (result.overview.length === 0) {
+      result.overview.push(s);
     } else {
-      currentSection.bullets.push(trimmed);
+      // Default to overview if uncategorized
+      result.overview.push(s);
     }
   }
 
-  // Build markdown output
-  const output: string[] = [];
-
-  for (const section of sections) {
-    if (section.bullets.length === 0) continue;
-
-    output.push(`**${section.title}**`);
-    output.push("");
-
-    for (const bullet of section.bullets) {
-      // Clean up the bullet text
-      let cleanBullet = bullet.trim();
-      // Remove trailing period for cleaner bullets, unless it ends with a number
-      if (cleanBullet.endsWith('.') && !/\d\.$/.test(cleanBullet)) {
-        cleanBullet = cleanBullet.slice(0, -1);
-      }
-      output.push(`- ${cleanBullet}`);
-    }
-    output.push("");
-  }
-
-  return output.join("\n");
+  return result;
 }
 
 function formatAiSimulationForMessage(data: AiLayerSimulateResponse, ok: boolean): string {
@@ -151,156 +125,145 @@ function formatAiSimulationForMessage(data: AiLayerSimulateResponse, ok: boolean
   const m = data.metrics;
   const pDefault = m.p_default * 100;
   const riskTier = m.risk_tier?.toLowerCase() || "unknown";
-
-  // Risk tier styling and classification
   const riskTierDisplay = riskTier.replace(/_/g, " ").toUpperCase();
-  const riskTierEmphasis =
-    riskTier === "low_risk" ? "favorable" :
-    riskTier === "medium_risk" ? "moderate" :
-    riskTier === "high_risk" ? "elevated" : "assessed";
 
-  // Extract archetype info if available
-  const archetype = data.archetype_info as Record<string, unknown> | undefined;
-  const archetypeName = archetype?.name as string | undefined;
-  const baseIncome = archetype?.base_mu as number | undefined;
-  const incomeVolatility = archetype?.income_volatility as number | undefined;
+  // Parse AI summary into sections
+  const summaryText = data.summary || data.quick_summary || "";
+  const parsed = parseAiSummary(summaryText);
 
-  // Extract trajectory info if available
-  const trajectory = data.trajectory_info as Record<string, unknown> | undefined;
-  const lifeEvents = trajectory?.events as Array<Record<string, unknown>> | undefined;
-  const significantEvents = lifeEvents?.filter(e =>
-    (e.event_type as string)?.includes("shock") ||
-    (e.magnitude as number) > 0.1 ||
-    (e.magnitude as number) < -0.1
-  );
+  // Helper to clean bullet text
+  const cleanBullet = (s: string) => {
+    let clean = s.trim();
+    if (clean.endsWith('.')) clean = clean.slice(0, -1);
+    return clean;
+  };
 
-  // Build the comprehensive summary
   const lines: string[] = [];
 
-  // Header with risk classification badge
-  lines.push("## Risk Assessment Report");
+  // ============================================
+  // HEADER: Risk Classification Banner
+  // ============================================
+  lines.push("## Risk Assessment Complete");
   lines.push("");
-  lines.push(`**Classification:** ${riskTierDisplay}`);
+  lines.push(`> **Risk Classification: ${riskTierDisplay}**`);
+  lines.push(`>`);
+  lines.push(`> Based on **5,000 Monte Carlo simulations** analyzing income trajectories, expense patterns, and life event scenarios.`);
   lines.push("");
+
+  // ============================================
+  // KEY METRICS: Highlight Box
+  // ============================================
   lines.push("---");
   lines.push("");
-
-  // Executive Summary Section
-  lines.push("### Executive Summary");
+  lines.push("### Key Metrics at a Glance");
   lines.push("");
-  lines.push(`This assessment analyzed **5,000 Monte Carlo simulations** to project income trajectories and repayment capacity over the loan term. The applicant demonstrates ${riskTierEmphasis} risk characteristics based on platform earnings patterns, expense obligations, and financial resilience factors.`);
+  lines.push(`| | |`);
+  lines.push(`|:--|:--|`);
+  lines.push(`| **Default Probability** | **${pDefault.toFixed(1)}%** |`);
+  lines.push(`| **Expected Loss** | **$${formatNumber(Math.round(m.expected_loss))}** |`);
+  lines.push(`| **Worst-Case Loss (CVaR 95%)** | **$${formatNumber(Math.round(m.cvar_95))}** |`);
   lines.push("");
 
-  // Add the AI-generated summary if available
-  const summaryText = data.summary || data.quick_summary || "";
-  if (summaryText && summaryText.length > 20) {
-    lines.push(formatSummaryText(summaryText));
+  // ============================================
+  // DETAILED ANALYSIS SECTIONS
+  // ============================================
+  lines.push("---");
+  lines.push("");
+  lines.push("## Detailed Analysis");
+  lines.push("");
+
+  // --- Risk Overview ---
+  if (parsed.overview.length > 0) {
+    lines.push("### Risk Profile");
     lines.push("");
-  }
-
-  lines.push("---");
-  lines.push("");
-
-  // Financial Profile Section
-  lines.push("### Applicant Financial Profile");
-  lines.push("");
-  if (archetypeName) {
-    lines.push(`**Worker Classification:** ${archetypeName}`);
-  }
-  if (baseIncome) {
-    lines.push(`**Estimated Base Income:** $${formatNumber(Math.round(baseIncome))}/month`);
-  }
-  if (incomeVolatility !== undefined) {
-    const volatilityDesc =
-      incomeVolatility < 0.15 ? "Low" :
-      incomeVolatility < 0.25 ? "Moderate" :
-      incomeVolatility < 0.35 ? "High" : "Very High";
-    lines.push(`**Income Volatility:** ${volatilityDesc} (${(incomeVolatility * 100).toFixed(0)}% coefficient of variation)`);
-  }
-  lines.push("");
-  lines.push("---");
-  lines.push("");
-
-  // Risk Metrics Section - Clean table format
-  lines.push("### Quantitative Risk Metrics");
-  lines.push("");
-  lines.push("| Metric | Value | Interpretation |");
-  lines.push("|:-------|:------|:---------------|");
-  lines.push(`| **Default Probability** | ${pDefault.toFixed(1)}% | ${pDefault < 10 ? "Low likelihood of missed payments" : pDefault < 25 ? "Moderate payment risk" : "Elevated payment risk"} |`);
-  lines.push(`| **Expected Loss** | $${formatNumber(Math.round(m.expected_loss))} | ${m.expected_loss < 500 ? "Minimal exposure" : m.expected_loss < 2000 ? "Manageable exposure" : "Significant exposure"} |`);
-  lines.push(`| **CVaR 95%** | $${formatNumber(Math.round(m.cvar_95))} | Worst-case scenario in top 5% of losses |`);
-  lines.push(`| **Risk Classification** | ${riskTierDisplay} | Overall creditworthiness tier |`);
-  lines.push("");
-  lines.push("---");
-  lines.push("");
-
-  // Life Events & Risk Factors Section
-  if (significantEvents && significantEvents.length > 0) {
-    lines.push("### Projected Life Events Considered");
-    lines.push("");
-    lines.push("The simulation incorporated the following potential income-affecting events:");
-    lines.push("");
-    significantEvents.slice(0, 5).forEach(event => {
-      const eventType = (event.event_type as string || "event").replace(/_/g, " ");
-      const month = event.month as number;
-      const magnitude = event.magnitude as number;
-      const impact = magnitude > 0 ? "positive" : "negative";
-      const impactPct = Math.abs(magnitude * 100).toFixed(0);
-      lines.push(`- **${eventType}** at month ${month}: ${impactPct}% ${impact} impact on income`);
+    parsed.overview.slice(0, 3).forEach(s => {
+      lines.push(`- ${cleanBullet(s)}`);
     });
     lines.push("");
-    lines.push("---");
+  }
+
+  // --- Default Analysis ---
+  if (parsed.defaultAnalysis.length > 0) {
+    lines.push("### Default Probability Analysis");
+    lines.push("");
+    parsed.defaultAnalysis.forEach(s => {
+      lines.push(`- ${cleanBullet(s)}`);
+    });
     lines.push("");
   }
 
-  // Key Risk Drivers Section
-  lines.push("### Key Risk Drivers");
-  lines.push("");
-
-  // Determine primary risk factors based on metrics
-  const riskDrivers: string[] = [];
-
-  if (pDefault >= 25) {
-    riskDrivers.push("**Income Volatility** — High variability in projected earnings increases payment uncertainty");
-  }
-  if (m.expected_loss > 1500) {
-    riskDrivers.push("**Exposure Level** — Loan amount relative to income creates meaningful loss potential");
-  }
-  if (incomeVolatility && incomeVolatility > 0.25) {
-    riskDrivers.push("**Platform Dependency** — Single or volatile platform income streams");
-  }
-  if (m.cvar_95 > m.expected_loss * 3) {
-    riskDrivers.push("**Tail Risk** — Significant gap between average and worst-case outcomes");
+  // --- Income Analysis ---
+  if (parsed.incomeAnalysis.length > 0) {
+    lines.push("### Income & Earnings");
+    lines.push("");
+    parsed.incomeAnalysis.forEach(s => {
+      lines.push(`- ${cleanBullet(s)}`);
+    });
+    lines.push("");
   }
 
-  if (riskDrivers.length === 0) {
-    riskDrivers.push("**Stable Income Pattern** — Consistent projected earnings across scenarios");
-    riskDrivers.push("**Adequate Reserves** — Financial cushion supports payment continuity");
+  // --- Life Events ---
+  if (parsed.lifeEvents.length > 0) {
+    lines.push("### Life Events & Disruptions");
+    lines.push("");
+    parsed.lifeEvents.forEach(s => {
+      lines.push(`- ${cleanBullet(s)}`);
+    });
+    lines.push("");
   }
 
-  riskDrivers.forEach(driver => lines.push(`- ${driver}`));
-  lines.push("");
+  // --- Risk Drivers ---
+  if (parsed.riskDrivers.length > 0) {
+    lines.push("### Primary Risk Drivers");
+    lines.push("");
+    parsed.riskDrivers.forEach(s => {
+      lines.push(`- ${cleanBullet(s)}`);
+    });
+    lines.push("");
+  }
+
+  // --- Positive Factors ---
+  if (parsed.positiveFactors.length > 0) {
+    lines.push("### Positive Factors");
+    lines.push("");
+    parsed.positiveFactors.forEach(s => {
+      lines.push(`- ${cleanBullet(s)}`);
+    });
+    lines.push("");
+  }
+
+  // --- Financial Resilience ---
+  if (parsed.resilience.length > 0) {
+    lines.push("### Financial Resilience");
+    lines.push("");
+    parsed.resilience.forEach(s => {
+      lines.push(`- ${cleanBullet(s)}`);
+    });
+    lines.push("");
+  }
+
+  // ============================================
+  // RECOMMENDATION BOX
+  // ============================================
   lines.push("---");
   lines.push("");
-
-  // Assessment Conclusion Section
-  lines.push("### Assessment Conclusion");
+  lines.push("### Recommendation");
   lines.push("");
 
   if (riskTier === "low_risk") {
-    lines.push("This applicant presents a **strong credit profile** for gig economy lending. The combination of stable projected income, manageable expense ratios, and financial resilience indicators supports favorable loan terms.");
-    lines.push("");
-    lines.push("**Recommendation:** Standard approval with competitive rate offerings.");
+    lines.push("> **Approve with standard terms**");
+    lines.push(">");
+    lines.push("> Strong credit profile with stable income projections. Competitive rates appropriate.");
   } else if (riskTier === "medium_risk") {
-    lines.push("This applicant presents a **moderate credit profile** with acceptable risk characteristics. While income projections show some variability, the overall financial picture supports cautious approval.");
-    lines.push("");
-    lines.push("**Recommendation:** Approval with standard terms. Consider income verification or reduced initial amount.");
+    lines.push("> **Approve with conditions**");
+    lines.push(">");
+    lines.push("> Moderate risk profile. Consider income verification or slightly reduced loan amount.");
   } else if (riskTier === "high_risk") {
-    lines.push("This applicant presents an **elevated risk profile** requiring careful consideration. Income volatility and financial stress indicators suggest heightened default potential.");
-    lines.push("");
-    lines.push("**Recommendation:** Consider structured approval with smaller loan amount, shorter term, or additional collateral requirements.");
+    lines.push("> **Review required**");
+    lines.push(">");
+    lines.push("> Elevated risk indicators. Recommend smaller loan amount, shorter term, or additional documentation.");
   } else {
-    lines.push("Risk assessment complete. Review the metrics above to inform lending decision.");
+    lines.push("> Review metrics above to inform lending decision.");
   }
   lines.push("");
 
