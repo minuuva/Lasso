@@ -1,11 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import Image from "next/image";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const TEAM_MEMBERS = [
   {
@@ -35,65 +31,8 @@ const TEAM_MEMBERS = [
 ];
 
 export function TeamSection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const headlineRef = useRef<HTMLHeadingElement>(null);
-  const cardsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!sectionRef.current) return;
-
-    const ctx = gsap.context(() => {
-      gsap.set([headlineRef.current, cardsRef.current], {
-        opacity: 0,
-        y: 60,
-      });
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top 80%",
-          toggleActions: "play none none none",
-        },
-      });
-
-      tl.to(headlineRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 1,
-        ease: "power3.out",
-      }).to(
-        cardsRef.current,
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          ease: "power3.out",
-        },
-        "-=0.5"
-      );
-
-      // Stagger team cards
-      gsap.from(".team-card", {
-        scrollTrigger: {
-          trigger: cardsRef.current,
-          start: "top 85%",
-        },
-        opacity: 0,
-        y: 40,
-        stagger: 0.15,
-        duration: 0.8,
-        ease: "power3.out",
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
-
   return (
-    <section
-      ref={sectionRef}
-      className="relative w-full pt-12 pb-16 px-8 md:px-16 lg:px-24 overflow-hidden"
-    >
+    <section className="relative w-full pt-12 pb-16 px-8 md:px-16 lg:px-24 overflow-hidden">
       {/* Background gradient */}
       <div
         className="absolute right-0 top-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none"
@@ -109,21 +48,18 @@ export function TeamSection() {
       </div>
 
       {/* Headline */}
-      <h2
-        ref={headlineRef}
-        className="font-display text-4xl md:text-5xl lg:text-[4rem] font-bold leading-[1.05] tracking-[-0.03em] mb-16"
-      >
+      <h2 className="font-display text-4xl md:text-5xl lg:text-[4rem] font-bold leading-[1.05] tracking-[-0.03em] mb-16">
         <span className="text-white">Built by</span>
         <br />
         <span className="text-gradient-accent">UVA students.</span>
       </h2>
 
       {/* Team cards */}
-      <div ref={cardsRef} className="grid md:grid-cols-3 gap-10 w-full">
+      <div className="grid md:grid-cols-3 gap-10 w-full">
         {TEAM_MEMBERS.map((member) => (
           <div
             key={member.name}
-            className="team-card group relative p-8 rounded-2xl bg-white/[0.04] border border-white/[0.1] hover:border-amber-500/30 hover:bg-white/[0.06] transition-all duration-300"
+            className="p-8 rounded-2xl bg-white/[0.04] border border-white/[0.1] hover:border-amber-500/30 hover:bg-white/[0.06] transition-all duration-300"
           >
             {/* Photo */}
             <div className="relative w-40 h-40 mx-auto mb-8 rounded-2xl overflow-hidden border-2 border-white/[0.1]">
