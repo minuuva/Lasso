@@ -61,7 +61,7 @@ function convertProfileToPython(profile: GigWorkerProfile): PythonSimulationInpu
   const platformToGigType: Record<string, string> = {
     uber_rideshare: "rideshare",
     lyft: "rideshare",
-    uber_eats: "delivery",
+    ubereats: "delivery",
     doordash: "delivery",
     instacart: "delivery",
     taskrabbit: "freelance",
