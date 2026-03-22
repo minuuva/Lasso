@@ -2,6 +2,8 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   BASELINE_SIMULATION_QUERY,
   extractedParamsToAiPayload,
@@ -56,16 +58,21 @@ function formatAiSimulationForMessage(data: AiLayerSimulateResponse, ok: boolean
   if (!data.metrics) {
     return "**Unexpected response** from AI layer.";
   }
+  // Use quick_summary for a shorter, more concise output
+  const summaryText = data.quick_summary || data.summary || "";
   const lines = [
-    "## Risk Assessment Summary",
+    "## Risk Assessment",
     "",
-    data.summary || data.quick_summary || "",
+    summaryText,
     "",
     "### Key Metrics",
-    `**Default probability:** ${(data.metrics.p_default * 100).toFixed(1)}%`,
-    `**Expected loss:** $${formatNumber(Math.round(data.metrics.expected_loss))}`,
-    `**CVaR (95%):** $${formatNumber(Math.round(data.metrics.cvar_95))}`,
-    `**Risk tier:** ${data.metrics.risk_tier}`,
+    "",
+    `| Metric | Value |`,
+    `|--------|-------|`,
+    `| Default Probability | **${(data.metrics.p_default * 100).toFixed(1)}%** |`,
+    `| Expected Loss | **$${formatNumber(Math.round(data.metrics.expected_loss))}** |`,
+    `| CVaR (95%) | **$${formatNumber(Math.round(data.metrics.cvar_95))}** |`,
+    `| Risk Tier | **${data.metrics.risk_tier}** |`,
   ];
   return lines.filter(Boolean).join("\n");
 }
@@ -1144,27 +1151,34 @@ Next: use the input below to describe optional macro or life events and layer st
                           </div>
                         ) : (
                           <>
-                            <div className="prose prose-invert prose-sm max-w-none">
-                              <div className="text-white/80 whitespace-pre-wrap leading-relaxed">
-                                {message.content}
-                              </div>
+                            <div className="prose prose-invert prose-sm max-w-none
+                              prose-headings:text-white prose-headings:font-display prose-headings:font-semibold
+                              prose-h2:text-xl prose-h2:mb-3 prose-h2:mt-0
+                              prose-h3:text-base prose-h3:mb-2 prose-h3:mt-4 prose-h3:text-amber-400
+                              prose-p:text-white/80 prose-p:leading-relaxed prose-p:my-2
+                              prose-strong:text-white prose-strong:font-semibold
+                              prose-code:text-amber-400 prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
+                              prose-table:text-sm prose-th:text-white/60 prose-th:font-medium prose-th:py-2
+                              prose-td:py-2 prose-td:text-white/80
+                              prose-ul:my-2 prose-li:text-white/80">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
                             </div>
 
                             {message.aiSimulation?.charts && message.aiSimulation.charts.length > 0 && (
-                              <div className="mt-4 space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                              <div className="mt-6 space-y-6">
                                 {message.aiSimulation.charts.map((c) => (
                                   <div
                                     key={`${message.id}-${c.type}-${c.path}`}
-                                    className="rounded-lg overflow-hidden border border-white/[0.1]"
+                                    className="rounded-xl overflow-hidden border border-white/[0.1] bg-black/30"
                                   >
-                                    <div className="text-[10px] text-white/40 px-2 py-1 bg-white/[0.04]">
+                                    <div className="text-xs text-white/50 px-4 py-2 bg-white/[0.04] border-b border-white/[0.06] font-medium">
                                       {c.description}
                                     </div>
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                       src={chartPathToProxyUrl(c.path)}
                                       alt={c.description}
-                                      className="w-full h-auto max-h-56 object-contain bg-black/50"
+                                      className="w-full h-auto object-contain p-2"
                                     />
                                   </div>
                                 ))}
