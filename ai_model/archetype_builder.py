@@ -53,7 +53,6 @@ class ArchetypeBuilder:
             - liquid_savings: float
             - monthly_fixed_expenses: float
             - existing_debt_obligations: float
-            - credit_score_range: tuple[int, int]
             - skill_growth_rate: float
             - platform_add_rate: float
             - has_vehicle: bool
@@ -134,12 +133,6 @@ class ArchetypeBuilder:
             has_vehicle=user_data.get("has_vehicle", True)
         )
         
-        credit_score_range = user_data.get("credit_score_range", (600, 660))
-        if isinstance(credit_score_range, (list, tuple)) and len(credit_score_range) == 2:
-            credit_score_range = list(credit_score_range)
-        else:
-            credit_score_range = [600, 660]
-        
         risk_category = self._determine_risk_category(cv, emergency_fund_weeks, debt_to_income_ratio)
         
         loan_range = self._recommend_loan_range(base_mu, risk_category)
@@ -164,7 +157,6 @@ class ArchetypeBuilder:
             "event_modifiers": event_modifiers,
             "emergency_fund_weeks": int(emergency_fund_weeks),
             "debt_to_income_ratio": float(debt_to_income_ratio),
-            "credit_score_range": credit_score_range,
             "default_risk_category": risk_category,
             "recommended_loan_amount_range": loan_range,
             "recommended_loan_term_months": loan_term

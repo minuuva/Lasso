@@ -21,14 +21,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Lasso | Beyond FICO Credit Intelligence",
+  title: "Lasso | Income-aware risk intelligence",
   description:
-    "Monte Carlo simulation revealing what FICO misses: the true volatility of gig worker income. Know who's safer and who's riskier.",
+    "Monte Carlo simulation built for volatile gig income—no credit score required. Model cash paths, stress events, and true default risk.",
   keywords: [
     "gig economy",
     "credit risk",
     "Monte Carlo simulation",
-    "FICO",
     "income volatility",
     "gig workers",
     "lasso",

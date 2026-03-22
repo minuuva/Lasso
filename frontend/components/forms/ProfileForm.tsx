@@ -32,7 +32,7 @@ import {
 import { ARCHETYPES } from "@/lib/constants";
 import { archetypeToProfile } from "@/mocks/generators";
 import { formatCurrency } from "@/lib/utils";
-import { Car, MapPin, Clock, DollarSign, CreditCard, Users, UserCircle } from "lucide-react";
+import { Car, MapPin, Clock, DollarSign, Users, UserCircle } from "lucide-react";
 
 export function ProfileForm() {
   const { state, updateProfile, runSimulation } = useSimulation();
@@ -257,32 +257,6 @@ export function ProfileForm() {
               min={0}
             />
           </div>
-        </div>
-
-        {/* Credit Score */}
-        <div className="space-y-2 pt-2 border-t border-border">
-          <Label htmlFor="credit" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            Credit Score (for FICO comparison)
-          </Label>
-          <Input
-            id="credit"
-            type="number"
-            value={profile.creditScore}
-            onChange={(e) =>
-              updateProfile({
-                creditScore: Math.min(
-                  850,
-                  Math.max(300, parseInt(e.target.value) || 300)
-                ),
-              })
-            }
-            min={300}
-            max={850}
-          />
-          <p className="text-xs text-muted-foreground">
-            Used to compare our model against traditional FICO assessment
-          </p>
         </div>
 
         {/* Secondary Income Toggle */}

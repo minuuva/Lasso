@@ -63,12 +63,25 @@ export function PreviewSection() {
     }, 300);
   };
 
-  // FICO comparison result
-  const riskAssessment = useMemo(() => {
-    const delta = selectedArchetype.defaultRiskCategory;
-    if (delta === "low") return { label: "FICO Overestimates Risk", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" };
-    if (delta === "high") return { label: "FICO Underestimates Risk", color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" };
-    return { label: "Aligned with FICO", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" };
+  const riskBand = useMemo(() => {
+    const cat = selectedArchetype.defaultRiskCategory;
+    if (cat === "low")
+      return {
+        label: "Lower simulated risk",
+        color: "text-emerald-400",
+        bg: "bg-emerald-500/10 border-emerald-500/20",
+      };
+    if (cat === "high")
+      return {
+        label: "Higher simulated risk",
+        color: "text-red-400",
+        bg: "bg-red-500/10 border-red-500/20",
+      };
+    return {
+      label: "Moderate risk band",
+      color: "text-amber-400",
+      bg: "bg-amber-500/10 border-amber-500/20",
+    };
   }, [selectedArchetype]);
 
   useEffect(() => {
@@ -277,11 +290,11 @@ export function PreviewSection() {
                 <div className="text-[11px] text-white/40">P(Negative CF)</div>
               </div>
 
-              <div className={`rounded-xl p-4 border ${riskAssessment.bg}`}>
-                <div className={`text-sm font-semibold ${riskAssessment.color} mb-1`}>
-                  {riskAssessment.label}
+              <div className={`rounded-xl p-4 border ${riskBand.bg}`}>
+                <div className={`text-sm font-semibold ${riskBand.color} mb-1`}>
+                  {riskBand.label}
                 </div>
-                <div className="text-[11px] text-white/40">vs FICO Score</div>
+                <div className="text-[11px] text-white/40">Income volatility view</div>
               </div>
             </div>
           </div>

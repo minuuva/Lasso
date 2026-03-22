@@ -4,7 +4,7 @@ import path from "path";
 import { generateMockSimulationResult } from "@/mocks/generators";
 import type { GigWorkerProfile, SimulationConfig, LoanParams } from "@/types";
 
-// Flag to use real Python backend vs mock
+// Legacy subprocess path (not wired). Use POST /api/simulation/ai-layer → Python FastAPI instead.
 const USE_PYTHON_BACKEND = process.env.USE_PYTHON_BACKEND === "true";
 
 interface PythonSimulationInput {
@@ -24,7 +24,6 @@ interface PythonSimulationInput {
     liquid_savings: number;
     monthly_fixed_expenses: number;
     existing_debt_obligations: number;
-    credit_score_range: [number, number];
     loan_request_amount: number;
     requested_term_months: number;
     acceptable_rate_range: [number, number];
@@ -88,7 +87,6 @@ function convertProfileToPython(profile: GigWorkerProfile): PythonSimulationInpu
     liquid_savings: profile.currentSavings,
     monthly_fixed_expenses: profile.monthlyRent + profile.monthlyFixedExpenses,
     existing_debt_obligations: 0, // Not in current profile type
-    credit_score_range: [profile.creditScore - 20, profile.creditScore + 20] as [number, number],
     loan_request_amount: 5000,
     requested_term_months: 24,
     acceptable_rate_range: [0.08, 0.18] as [number, number],

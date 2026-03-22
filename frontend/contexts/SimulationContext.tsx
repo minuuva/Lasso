@@ -256,4 +256,9 @@ export function useSimulation() {
   return context;
 }
 
+/** Same as useSimulation but returns null outside SimulationProvider (e.g. marketing AI chat). */
+export function useSimulationOptional(): SimulationContextType | null {
+  return useContext(SimulationContext);
+}
+
 export default SimulationContext;

@@ -138,7 +138,6 @@ class VarLendModel:
         liquid_savings: Optional[float] = None,
         monthly_expenses: Optional[float] = None,
         existing_debt: Optional[float] = None,
-        credit_score_range: Optional[tuple] = None,
         metro_area: str = "national",
         months_experience: int = 12,
         has_vehicle: bool = True,
@@ -169,7 +168,6 @@ class VarLendModel:
             liquid_savings: Cash savings ($)
             monthly_expenses: Fixed monthly expenses ($)
             existing_debt: Monthly debt obligations ($)
-            credit_score_range: (min, max) credit score
             metro_area: Geographic area
             months_experience: Months as gig worker
             has_vehicle: Whether user owns a vehicle
@@ -204,7 +202,6 @@ class VarLendModel:
             liquid_savings=liquid_savings,
             monthly_expenses=monthly_expenses,
             existing_debt=existing_debt,
-            credit_score_range=credit_score_range,
             metro_area=metro_area,
             months_experience=months_experience,
             has_vehicle=has_vehicle,
@@ -376,7 +373,6 @@ class VarLendModel:
         liquid_savings: Optional[float],
         monthly_expenses: Optional[float],
         existing_debt: Optional[float],
-        credit_score_range: Optional[tuple],
         metro_area: str,
         months_experience: int,
         has_vehicle: bool,
@@ -453,12 +449,6 @@ class VarLendModel:
             }) + '\n')
         # #endregion
         
-        if credit_score_range is not None:
-            user_data["credit_score_range"] = list(credit_score_range)
-        else:
-            # Default: 600-660 (subprime)
-            user_data["credit_score_range"] = [600, 660]
-        
         # If user_prompt provided and LLM available, try to extract additional context
         if user_prompt and self.llm_client:
             try:
@@ -485,8 +475,7 @@ class VarLendModel:
             "hours_per_week": float (if mentioned),
             "has_vehicle": bool (if mentioned),
             "has_dependents": bool (if mentioned),
-            "metro_area": str (if mentioned),
-            "credit_score_estimate": int (if mentioned)
+            "metro_area": str (if mentioned)
         }
         
         Return empty {} if no additional info found. Return ONLY valid JSON.
@@ -843,7 +832,6 @@ class VarLendModel:
                 "liquid_savings": user_data["liquid_savings"],
                 "monthly_expenses": user_data["monthly_fixed_expenses"],
                 "debt_obligations": user_data["existing_debt_obligations"],
-                "credit_score_range": user_data["credit_score_range"],
                 "metro_area": user_data["metro_area"]
             },
             "loan_request": {
@@ -1127,7 +1115,6 @@ if __name__ == "__main__":
         liquid_savings=6000,
         monthly_expenses=2000,
         existing_debt=300,
-        credit_score_range=(650, 700),
         metro_area="san_francisco",
         months_experience=24,
         has_vehicle=True,

@@ -5,17 +5,20 @@ Coordinates archetype building, simulation execution, and result collection.
 """
 
 import sys
-import os
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional, Any, List, Dict
 from dataclasses import dataclass
-import json
-import numpy as np
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from life_simulation.run_life_simulation import run_full_life_simulation
-from monte_carlo_sim.src.integration.profile_builder import CustomerApplication
+from life_simulation.trajectory_builder import build_life_trajectory
+from data_pipeline.loaders import DataLoader
+from monte_carlo_sim.src.integration.profile_builder import (
+    CustomerApplication,
+    build_profile_from_application,
+    scenario_from_data_pipeline,
+)
+from monte_carlo_sim.src.engine.monte_carlo import _dominant_gig_type
 from monte_carlo_sim.src.types import LoanConfig
 from life_simulation.models import LifeTrajectory
 from monte_carlo_sim.src.types import SimulationResult
@@ -174,15 +177,27 @@ class SimulationRunner:
         time_horizon = scenario.get("time_horizon_months", Config.DEFAULT_TIME_HORIZON_MONTHS)
         n_paths = scenario.get("n_paths", Config.DEFAULT_N_PATHS)
         random_seed = scenario.get("random_seed", 42)
-        
-        trajectory, result = run_full_life_simulation(
+
+        trajectory = build_life_trajectory(
+            archetype_id=archetype["id"],
+            n_months=time_horizon,
+            random_seed=random_seed,
+        )
+
+        merged_ai = self._build_merged_ai_scenario(scenario, customer_app, time_horizon)
+        if merged_ai is not None and not merged_ai.get("parameter_shifts") and not merged_ai.get(
+            "discrete_jumps"
+        ):
+            merged_ai = None
+
+        result = run_full_life_simulation(
             archetype_id=archetype["id"],
             customer_application=customer_app,
             loan_config=loan_config,
             random_seed=random_seed,
             n_paths=n_paths,
             horizon_months=time_horizon,
-            enable_life_events=False
+            ai_scenario=merged_ai,
         )
         
         execution_time = time.time() - start_time
@@ -245,6 +260,98 @@ class SimulationRunner:
             archetype["emergency_fund_weeks"] = custom_params["emergency_fund_weeks"]
         
         return archetype
+
+    @staticmethod
+    def _sanitize_ai_scenario_dict(raw: Dict[str, Any], horizon_months: int) -> Dict[str, Any]:
+        shifts_out: List[Dict[str, Any]] = []
+        for s in raw.get("parameter_shifts", []):
+            if not isinstance(s, dict):
+                continue
+            try:
+                start = int(s["start_month"])
+                dur = int(s["duration_months"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if start < 0 or start >= horizon_months:
+                continue
+            dur = max(1, min(dur, horizon_months - start))
+            shifts_out.append({**s, "start_month": start, "duration_months": dur})
+        jumps_out: List[Dict[str, Any]] = []
+        for j in raw.get("discrete_jumps", []):
+            if not isinstance(j, dict):
+                continue
+            try:
+                m = int(j["month"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if 0 <= m < horizon_months:
+                jumps_out.append(j)
+        return {
+            "narrative": str(raw.get("narrative", "")),
+            "parameter_shifts": shifts_out,
+            "discrete_jumps": jumps_out,
+        }
+
+    @staticmethod
+    def _lookup_scenario_category(loader: DataLoader, scenario_name: str) -> Optional[str]:
+        for cat, names in loader.list_scenarios().items():
+            if scenario_name in names:
+                return cat
+        return None
+
+    @staticmethod
+    def _merge_scenario_dicts(parts: List[Dict[str, Any]]) -> Dict[str, Any]:
+        narratives: List[str] = []
+        shifts: List[Dict[str, Any]] = []
+        jumps: List[Dict[str, Any]] = []
+        for p in parts:
+            n = p.get("narrative")
+            if n:
+                narratives.append(str(n))
+            shifts.extend(p.get("parameter_shifts", []) or [])
+            jumps.extend(p.get("discrete_jumps", []) or [])
+        return {
+            "narrative": " | ".join(narratives) if narratives else "Scenario",
+            "parameter_shifts": shifts,
+            "discrete_jumps": jumps,
+        }
+
+    def _build_merged_ai_scenario(
+        self,
+        scenario: dict,
+        customer_app: CustomerApplication,
+        horizon_months: int,
+    ) -> Optional[Dict[str, Any]]:
+        parts: List[Dict[str, Any]] = []
+        structured = scenario.get("structured_scenario")
+        if structured and isinstance(structured, dict):
+            parts.append(structured)
+        forced = scenario.get("forced_events") or []
+        if forced:
+            loader = DataLoader()
+            profile = build_profile_from_application(customer_app, loader)
+            gig_type = _dominant_gig_type(profile)
+            for fe in forced:
+                if not isinstance(fe, dict):
+                    continue
+                ev_type = fe.get("type")
+                if not ev_type:
+                    continue
+                start = int(fe.get("start_month", 0))
+                cat = self._lookup_scenario_category(loader, str(ev_type))
+                if not cat:
+                    continue
+                try:
+                    raw = scenario_from_data_pipeline(
+                        loader, cat, str(ev_type), start, gig_type
+                    )
+                    parts.append(raw)
+                except Exception:
+                    continue
+        if not parts:
+            return None
+        merged = self._merge_scenario_dicts(parts)
+        return self._sanitize_ai_scenario_dict(merged, horizon_months)
     
     def _build_customer_application(
         self,
@@ -281,16 +388,19 @@ class SimulationRunner:
         
         loan_term = scenario.get("loan_term_months", 48)
         
+        metro = archetype["metro"]
+        if user_data and user_data.get("metro_area"):
+            metro = user_data["metro_area"]
+
         return CustomerApplication(
             platforms_and_hours=platforms_and_hours,
-            metro_area=archetype["metro"],
+            metro_area=metro,
             months_as_gig_worker=experience,
             has_vehicle=user_data.get("has_vehicle", True) if user_data else True,
             has_dependents=user_data.get("has_dependents", False) if user_data else False,
             liquid_savings=liquid_savings,
             monthly_fixed_expenses=monthly_expenses,
             existing_debt_obligations=debt_obligations,
-            credit_score_range=tuple(archetype["credit_score_range"]),
             loan_request_amount=loan_amount,
             requested_term_months=loan_term,
             acceptable_rate_range=(0.08, 0.20)

@@ -5,7 +5,6 @@ import type {
   SimulationSummary,
   LoanEvaluation,
   LoanParams,
-  RiskAssessment,
 } from "@/types";
 import {
   PLATFORM_BASE_RATES,
@@ -16,7 +15,6 @@ import {
   LIFE_EVENTS,
   type Archetype,
 } from "@/lib/constants";
-import { getFicoDefaultRate } from "@/types/loan";
 
 // Seeded random number generator for consistent SSR/client values
 function createSeededRandom(seed: number): () => number {
@@ -167,11 +165,6 @@ export function archetypeToProfile(archetype: Archetype): GigWorkerProfile {
     archetype.emergencyFundWeeks * (estimatedMonthlyIncome / 4)
   );
 
-  // Pick credit score from middle of range
-  const creditScore = Math.round(
-    (archetype.creditScoreRange[0] + archetype.creditScoreRange[1]) / 2
-  );
-
   return {
     platform: platform as GigWorkerProfile["platform"],
     metro: metro as GigWorkerProfile["metro"],
@@ -182,7 +175,6 @@ export function archetypeToProfile(archetype: Archetype): GigWorkerProfile {
     monthlyRent,
     monthlyFixedExpenses,
     currentSavings,
-    creditScore,
     dependents: 0,
   };
 }
@@ -282,31 +274,26 @@ function generateMockLoanEvaluation(
   loanParams: LoanParams
 ): LoanEvaluation {
   const monthlyPayment = calculateMonthlyPayment(loanParams);
-  const ficoDefaultRate = getFicoDefaultRate(profile.creditScore);
 
-  // Our model's assessment (varies based on profile factors)
+  // Volatility- and cash-flow-style default estimate (no credit score)
   const stabilityFactor = Math.min(profile.monthsExperience / 24, 1);
   const savingsFactor = Math.min(profile.currentSavings / 5000, 1);
   const incomeFactor = profile.hasSecondaryIncome ? 0.7 : 1.0;
+  const baseIncome = calculateBaseIncome(profile);
+  const expenses = profile.monthlyRent + profile.monthlyFixedExpenses;
+  const paymentBurden =
+    monthlyPayment / Math.max(baseIncome - expenses, 1);
 
-  // Calculate our model's default rate
-  const ourDefaultRate =
-    ficoDefaultRate *
-    (1 - stabilityFactor * 0.3) *
-    (1 - savingsFactor * 0.2) *
-    incomeFactor;
-
-  const riskDelta = ourDefaultRate - ficoDefaultRate;
-
-  // Determine risk assessment
-  let riskAssessment: RiskAssessment;
-  if (riskDelta < -0.02) {
-    riskAssessment = "FICO_OVERESTIMATES_RISK";
-  } else if (riskDelta > 0.02) {
-    riskAssessment = "FICO_UNDERESTIMATES_RISK";
-  } else {
-    riskAssessment = "ALIGNED";
-  }
+  const ourDefaultRate = Math.min(
+    0.45,
+    Math.max(
+      0.02,
+      INCOME_VOLATILITY.medianCv * 0.35 * paymentBurden * incomeFactor *
+        (1 - stabilityFactor * 0.25) *
+        (1 - savingsFactor * 0.2) +
+        (seededRandom() - 0.5) * 0.04
+    )
+  );
 
   return {
     loanAmount: loanParams.amount,
@@ -317,10 +304,6 @@ function generateMockLoanEvaluation(
     probMissThreeConsecutive: Math.min(ourDefaultRate * 1.2, 0.5),
     probDefault: ourDefaultRate,
     monthsToFirstMissP50: 12 + seededRandom() * 12,
-    ficoEstimatedDefaultRate: ficoDefaultRate,
-    ficoScore: profile.creditScore,
-    riskDelta,
-    riskAssessment,
   };
 }
 
@@ -423,12 +406,6 @@ export function generateStressedSimulationResult(
         0.6
       ),
     };
-    stressedLoanEval.riskDelta =
-      stressedLoanEval.probDefault -
-      stressedLoanEval.ficoEstimatedDefaultRate;
-    if (stressedLoanEval.riskDelta > 0.02) {
-      stressedLoanEval.riskAssessment = "FICO_UNDERESTIMATES_RISK";
-    }
   }
 
   return {

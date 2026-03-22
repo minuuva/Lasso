@@ -209,10 +209,6 @@
       },
       "emergency_fund_weeks": 2,
       "debt_to_income_ratio": 0.027777777777777776,
-      "credit_score_range": [
-        630,
-        670
-      ],
       "default_risk_category": "medium",
       "recommended_loan_amount_range": [
         7200,

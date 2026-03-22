@@ -19,10 +19,9 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useSimulation } from "@/contexts/SimulationContext";
-import { LOAN_TERM_OPTIONS, getRiskAssessmentLabel } from "@/types";
+import { LOAN_TERM_OPTIONS } from "@/types";
 import { formatCurrency, formatPercent, calculateMonthlyPayment } from "@/lib/utils";
 import { CreditCard, DollarSign, Percent, Clock } from "lucide-react";
-import { FicoComparison } from "../comparison/FicoComparison";
 
 export function LoanEvalPanel() {
   const { state, updateLoanParams, hasResults, hasComparison } = useSimulation();
@@ -168,9 +167,6 @@ export function LoanEvalPanel() {
                 </span>
               </div>
             </div>
-
-            {/* FICO Comparison */}
-            <FicoComparison evaluation={loanEval} />
           </div>
         )}
 

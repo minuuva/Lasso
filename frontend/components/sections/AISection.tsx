@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { AIChat } from "@/components/chat";
+import { SimulationProvider } from "@/contexts/SimulationContext";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -107,7 +108,9 @@ export function AISection() {
           <div className="relative">
             <div className="absolute -inset-4 bg-gradient-to-r from-purple-500/10 via-amber-500/5 to-purple-500/10 rounded-3xl blur-2xl opacity-50" />
             <div className="relative glass-card-premium h-[600px]">
-              <AIChat />
+              <SimulationProvider>
+                <AIChat />
+              </SimulationProvider>
             </div>
           </div>
 

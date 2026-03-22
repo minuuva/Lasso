@@ -189,7 +189,6 @@ export interface Archetype {
   experienceMonths: number;
   emergencyFundWeeks: number;
   debtToIncomeRatio: number;
-  creditScoreRange: [number, number];
   defaultRiskCategory: "low" | "medium" | "high";
   recommendedLoanAmountRange: [number, number];
   recommendedLoanTermMonths: number;
@@ -209,7 +208,6 @@ export const ARCHETYPES: Archetype[] = [
     experienceMonths: 6,
     emergencyFundWeeks: 2,
     debtToIncomeRatio: 0.45,
-    creditScoreRange: [580, 640],
     defaultRiskCategory: "high",
     recommendedLoanAmountRange: [2000, 5000],
     recommendedLoanTermMonths: 12,
@@ -227,7 +225,6 @@ export const ARCHETYPES: Archetype[] = [
     experienceMonths: 24,
     emergencyFundWeeks: 8,
     debtToIncomeRatio: 0.3,
-    creditScoreRange: [660, 720],
     defaultRiskCategory: "low",
     recommendedLoanAmountRange: [5000, 10000],
     recommendedLoanTermMonths: 24,
@@ -245,7 +242,6 @@ export const ARCHETYPES: Archetype[] = [
     experienceMonths: 12,
     emergencyFundWeeks: 10,
     debtToIncomeRatio: 0.25,
-    creditScoreRange: [680, 740],
     defaultRiskCategory: "low",
     recommendedLoanAmountRange: [1000, 3000],
     recommendedLoanTermMonths: 12,
@@ -263,7 +259,6 @@ export const ARCHETYPES: Archetype[] = [
     experienceMonths: 36,
     emergencyFundWeeks: 4,
     debtToIncomeRatio: 0.4,
-    creditScoreRange: [640, 700],
     defaultRiskCategory: "medium",
     recommendedLoanAmountRange: [5000, 12000],
     recommendedLoanTermMonths: 24,
@@ -281,7 +276,6 @@ export const ARCHETYPES: Archetype[] = [
     experienceMonths: 3,
     emergencyFundWeeks: 3,
     debtToIncomeRatio: 0.35,
-    creditScoreRange: [620, 680],
     defaultRiskCategory: "medium",
     recommendedLoanAmountRange: [2000, 6000],
     recommendedLoanTermMonths: 18,

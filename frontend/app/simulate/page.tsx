@@ -2,6 +2,14 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
+import {
+  BASELINE_SIMULATION_QUERY,
+  extractedParamsToAiPayload,
+  chartPathToProxyUrl,
+  type AiLayerSimulateResponse,
+  type AiLayerUserData,
+  type AiLayerLoanPreferences,
+} from "@/lib/aiLayer";
 
 // Simple unique ID generator
 let idCounter = 0;
@@ -22,6 +30,44 @@ interface Message {
   isLoading?: boolean;
   questions?: ParameterQuestion[];
   extractedParams?: Record<string, unknown>;
+  aiSimulation?: AiLayerSimulateResponse;
+  scenario?: {
+    narrative: string;
+    parameter_shifts: unknown[];
+    discrete_jumps: unknown[];
+  };
+}
+
+type ApplicantAiBundle = {
+  userData: AiLayerUserData;
+  loanPreferences: AiLayerLoanPreferences;
+};
+
+function formatAiSimulationForMessage(data: AiLayerSimulateResponse, ok: boolean): string {
+  if (!ok) {
+    const d =
+      typeof data.detail === "string"
+        ? data.detail
+        : typeof (data as { error?: string }).error === "string"
+          ? (data as { error: string }).error
+          : "Request failed";
+    return `**AI layer error:** ${d}\n\nSet \`AI_MODEL_API_BASE_URL\` in \`.env.local\` and start the FastAPI server (repo root: \`python -m uvicorn ai_model.api.server:app --reload\`).`;
+  }
+  if (!data.metrics) {
+    return "**Unexpected response** from AI layer.";
+  }
+  const lines = [
+    "## Simulation complete",
+    "",
+    data.quick_summary || data.summary?.slice(0, 800) || "",
+    "",
+    `**Default probability:** ${(data.metrics.p_default * 100).toFixed(1)}%`,
+    `**Expected loss:** $${formatNumber(Math.round(data.metrics.expected_loss))}`,
+    `**CVaR (95%):** $${formatNumber(Math.round(data.metrics.cvar_95))}`,
+    `**Risk tier:** ${data.metrics.risk_tier}`,
+    `**Approved:** ${data.metrics.approved ? "yes" : "no"}`,
+  ];
+  return lines.filter(Boolean).join("\n");
 }
 
 interface ParameterQuestion {
@@ -275,10 +321,12 @@ export default function SimulateHub() {
   const [extractedParams, setExtractedParams] = useState<Partial<ExtractedParams>>({});
   const [pendingQuestions, setPendingQuestions] = useState<ParameterQuestion[]>([]);
   const [pendingAnswers, setPendingAnswers] = useState<Record<string, unknown>>({});
+  /** After all 11 fields collected: used for stress / macro prompts without re-extraction. */
+  const [applicantBundle, setApplicantBundle] = useState<ApplicantAiBundle | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // 11 total params (no FICO)
+  // 11 applicant params (no credit score)
   const totalParams = 11;
   const collectedParams = Object.values(extractedParams).filter(
     (v) => v !== null && v !== undefined
@@ -305,6 +353,7 @@ export default function SimulateHub() {
     setExtractedParams({});
     setPendingQuestions([]);
     setPendingAnswers({});
+    setApplicantBundle(null);
   };
 
   const handleSelectChat = (chat: Chat) => {
@@ -518,18 +567,195 @@ All 11 required data points have been gathered. The application bundle is ready 
 ${pythonFormat}
 \`\`\`
 
-**Ready for AI Layer & Monte Carlo simulation.**`,
+**Ready for AI Layer & Monte Carlo simulation.**
+
+Next: use the input below to describe optional macro or life events and layer structured shocks on this applicant.**`,
       timestamp: new Date(),
       extractedParams: customerApplication as unknown as Record<string, unknown>,
     };
 
     setMessages((prev) => [...prev, successMessage]);
+
+    const { userData, loanPreferences } = extractedParamsToAiPayload(
+      params,
+      termMonths,
+      metroArea
+    );
+    setApplicantBundle({ userData, loanPreferences });
+
+    const simLoadingId = generateId();
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: simLoadingId,
+        role: "assistant",
+        content: "Running Monte Carlo via AI layer…",
+        timestamp: new Date(),
+        isLoading: true,
+      },
+    ]);
+
+    void (async () => {
+      try {
+        const res = await fetch("/api/simulation/ai-layer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: BASELINE_SIMULATION_QUERY,
+            userData,
+            loanPreferences,
+            generateCharts: true,
+          }),
+        });
+        const data = (await res.json()) as AiLayerSimulateResponse;
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === simLoadingId
+              ? {
+                  ...m,
+                  isLoading: false,
+                  content: formatAiSimulationForMessage(data, res.ok),
+                  aiSimulation: res.ok ? data : undefined,
+                }
+              : m
+          )
+        );
+      } catch {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === simLoadingId
+              ? {
+                  ...m,
+                  isLoading: false,
+                  content:
+                    "Could not reach the AI layer. Set AI_MODEL_API_BASE_URL in .env.local and ensure the FastAPI server is running.",
+                }
+              : m
+          )
+        );
+      }
+    })();
   };
 
   const handleSubmit = async (e?: React.FormEvent, suggestionText?: string) => {
     e?.preventDefault();
     const messageText = suggestionText || input.trim();
     if (!messageText || isLoading) return;
+
+    if (applicantBundle) {
+      const userMessageId = generateId();
+      const loadingMessageId = generateId();
+      const userMessage: Message = {
+        id: userMessageId,
+        role: "user",
+        content: messageText,
+        timestamp: new Date(),
+      };
+      const loadingMessage: Message = {
+        id: loadingMessageId,
+        role: "assistant",
+        content: "Interpreting event…",
+        timestamp: new Date(),
+        isLoading: true,
+      };
+      setMessages((prev) => [...prev, userMessage, loadingMessage]);
+      setInput("");
+      setIsLoading(true);
+      try {
+        const interpretRes = await fetch("/api/ai/interpret", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: messageText,
+            context: applicantBundle.userData,
+          }),
+        });
+        const interpretation = await interpretRes.json();
+        if (!interpretRes.ok || interpretation.error) {
+          const err =
+            interpretation.response ||
+            interpretation.error ||
+            "Could not interpret that event.";
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === loadingMessageId
+                ? { ...m, content: err, isLoading: false }
+                : m
+            )
+          );
+          return;
+        }
+
+        if (interpretation.should_run_simulation && interpretation.scenario) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === loadingMessageId
+                ? { ...m, content: "Running stressed simulation…", isLoading: true }
+                : m
+            )
+          );
+          const rawQ = `Stress test: ${interpretation.scenario.narrative || messageText}. Gig worker applicant.`;
+          const query = rawQ.length >= 10 ? rawQ : `${rawQ} Full Monte Carlo.`;
+          const simRes = await fetch("/api/simulation/ai-layer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query,
+              userData: applicantBundle.userData,
+              loanPreferences: applicantBundle.loanPreferences,
+              structuredScenario: interpretation.scenario,
+              generateCharts: true,
+            }),
+          });
+          const simData = (await simRes.json()) as AiLayerSimulateResponse;
+          const lead = typeof interpretation.response === "string" ? interpretation.response : "";
+          const content = `${lead}\n\n${formatAiSimulationForMessage(simData, simRes.ok)}`;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === loadingMessageId
+                ? {
+                    ...m,
+                    content,
+                    isLoading: false,
+                    aiSimulation: simRes.ok ? simData : undefined,
+                    scenario: interpretation.scenario,
+                  }
+                : m
+            )
+          );
+        } else {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === loadingMessageId
+                ? {
+                    ...m,
+                    content:
+                      typeof interpretation.response === "string"
+                        ? interpretation.response
+                        : "OK.",
+                    isLoading: false,
+                  }
+                : m
+            )
+          );
+        }
+      } catch {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === loadingMessageId
+              ? {
+                  ...m,
+                  content: "Error running event simulation. Try again.",
+                  isLoading: false,
+                }
+              : m
+          )
+        );
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
 
     const userMessageId = generateId();
     const loadingMessageId = generateId();
@@ -914,6 +1140,27 @@ ${pythonFormat}
                               </div>
                             </div>
 
+                            {message.aiSimulation?.charts && message.aiSimulation.charts.length > 0 && (
+                              <div className="mt-4 space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                                {message.aiSimulation.charts.map((c) => (
+                                  <div
+                                    key={`${message.id}-${c.type}-${c.path}`}
+                                    className="rounded-lg overflow-hidden border border-white/[0.1]"
+                                  >
+                                    <div className="text-[10px] text-white/40 px-2 py-1 bg-white/[0.04]">
+                                      {c.description}
+                                    </div>
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={chartPathToProxyUrl(c.path)}
+                                      alt={c.description}
+                                      className="w-full h-auto max-h-56 object-contain bg-black/50"
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
                             {message.questions && message.questions.length > 0 && pendingQuestions.length > 0 && (
                               <div className="mt-4">
                                 {message.questions.map((q) => (
@@ -965,7 +1212,13 @@ ${pythonFormat}
                     handleSubmit();
                   }
                 }}
-                placeholder={pendingQuestions.length > 0 ? "Or type additional info here..." : "Describe the loan applicant..."}
+                placeholder={
+                  applicantBundle
+                    ? "Describe a macro or life event to layer on (e.g. gas_spike_severe from month 2)…"
+                    : pendingQuestions.length > 0
+                      ? "Or type additional info here..."
+                      : "Describe the loan applicant..."
+                }
                 rows={1}
                 className="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 pr-12 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 resize-none transition-all"
                 disabled={isLoading}
@@ -985,7 +1238,9 @@ ${pythonFormat}
               </button>
             </div>
             <div className="flex items-center justify-center mt-2 text-[10px] text-white/25">
-              Data collection for Monte Carlo risk simulation.
+              {applicantBundle
+                ? "Applicant locked — messages run stress scenarios via the AI layer."
+                : "Data collection for Monte Carlo risk simulation."}
             </div>
           </form>
         </div>

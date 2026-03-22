@@ -25,16 +25,8 @@ export type {
 } from "./simulation";
 
 // Loan types
-export {
-  DEFAULT_LOAN_PARAMS,
-  LOAN_TERM_OPTIONS,
-  FICO_DEFAULT_RATES,
-  getFicoDefaultRate,
-  getFicoRatingLabel,
-  getRiskAssessmentColor,
-  getRiskAssessmentLabel,
-} from "./loan";
-export type { LoanParams, RiskAssessment, LoanEvaluation } from "./loan";
+export { DEFAULT_LOAN_PARAMS, LOAN_TERM_OPTIONS } from "./loan";
+export type { LoanParams, LoanEvaluation } from "./loan";
 
 // Scenario types
 export { PRESET_SCENARIOS, PRESET_SCENARIO_INFO } from "./scenario";

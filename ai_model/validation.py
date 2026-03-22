@@ -32,7 +32,6 @@ class InputValidator:
         "liquid_savings",
         "monthly_fixed_expenses",
         "existing_debt_obligations",
-        "credit_score_range"
     ]
     
     VALID_PLATFORMS = [
@@ -52,7 +51,6 @@ class InputValidator:
         "liquid_savings": 1500,
         "monthly_fixed_expenses": 1200,
         "existing_debt_obligations": 150,
-        "credit_score_range": (600, 660),
         "emergency_fund_weeks": 3,
         "skill_growth_rate": 0.04,
         "platform_add_rate": 0.08,

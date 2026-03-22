@@ -100,7 +100,7 @@ export function ProblemSection() {
         ref={headlineRef}
         className="font-display text-4xl md:text-5xl lg:text-[4rem] font-bold leading-[1.05] tracking-[-0.03em] mb-8"
       >
-        <span className="text-white">FICO sees your past.</span>
+        <span className="text-white">Traditional scores see your past.</span>
         <br />
         <span className="text-gradient-fade">Not your future.</span>
       </h2>
@@ -148,13 +148,13 @@ export function ProblemSection() {
           </div>
         </div>
 
-        {/* Stat 3: FICO blind */}
+        {/* Stat 3: credit scores vs volatility */}
         <div className="numbered-card" data-number="03">
           <div className="text-5xl md:text-6xl font-display font-bold text-white/50 mb-3">
             <CountUp end={0} suffix="%" />
           </div>
           <div className="text-sm text-white/40 leading-relaxed">
-            of income volatility captured by FICO scores
+            of month-to-month income volatility explained by typical credit scores
           </div>
         </div>
       </div>

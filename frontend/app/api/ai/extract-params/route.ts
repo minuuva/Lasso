@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const anthropic = new Anthropic();
 
-// All required parameters for a complete simulation (11 total - no FICO)
+// All required parameters for a complete simulation (11 total — no credit score)
 const REQUIRED_PARAMS = {
   // Platform info
   platforms: {
@@ -108,7 +108,7 @@ const SYSTEM_PROMPT = `You are a financial data extraction assistant for Lasso, 
 
 Your job is to extract loan applicant parameters from natural language input provided by loan officers. The loan officer is describing a gig worker applicant's situation and requesting a risk assessment.
 
-IMPORTANT: We do NOT use FICO/credit scores. Our Monte Carlo simulation assesses risk based on gig work patterns and financial stability.
+IMPORTANT: We do NOT use credit scores. Risk is assessed from gig work patterns, expenses, savings, and Monte Carlo simulation of volatile income.
 
 REQUIRED PARAMETERS TO EXTRACT (about the applicant):
 1. platforms - Which gig platforms the applicant works on (uber, lyft, doordash, grubhub, instacart, ubereats)

@@ -218,6 +218,9 @@ async def simulate(request: SimulateRequest):
         
         if request.random_seed:
             sim_request.scenario["random_seed"] = request.random_seed
+
+        if request.structured_scenario:
+            sim_request.scenario["structured_scenario"] = request.structured_scenario
         
         runner = SimulationRunner()
         output = runner.run_from_request(sim_request, user_data_dict)
@@ -346,16 +349,20 @@ def _generate_all_charts(output) -> List[ChartInfo]:
     """Generate all visualization charts for simulation output."""
     
     from ai_model.visualization.path_plotter import (
-        plot_income_paths, plot_income_distribution, plot_net_cash_flow
+        plot_income_paths,
+        plot_income_distribution,
+        plot_net_cash_flow,
     )
     from ai_model.visualization.risk_charts import (
         plot_default_timing_analysis, plot_risk_summary_card
     )
     from ai_model.visualization.portfolio_charts import (
-        plot_portfolio_evolution, plot_income_evolution
+        plot_portfolio_evolution,
+        plot_income_evolution,
     )
     from ai_model.visualization.event_timeline import (
-        plot_event_timeline, plot_event_impact_summary
+        plot_event_timeline,
+        plot_event_impact_summary,
     )
     from monte_carlo_sim.src.types import LoanConfig
     
@@ -420,6 +427,46 @@ def _generate_all_charts(output) -> List[ChartInfo]:
         ))
     except Exception as e:
         print(f"Warning: Failed to generate default_timing chart: {e}")
+
+    try:
+        path = plot_income_distribution(result, arch)
+        charts.append(ChartInfo(
+            type="income_distribution",
+            path=f"/charts/{path.name}",
+            description="Income distribution at month 0"
+        ))
+    except Exception as e:
+        print(f"Warning: Failed to generate income_distribution chart: {e}")
+
+    try:
+        path = plot_net_cash_flow(result, arch, loan_config)
+        charts.append(ChartInfo(
+            type="net_cash_flow",
+            path=f"/charts/{path.name}",
+            description="Net cash flow after expenses and loan payment"
+        ))
+    except Exception as e:
+        print(f"Warning: Failed to generate net_cash_flow chart: {e}")
+
+    try:
+        path = plot_income_evolution(trajectory)
+        charts.append(ChartInfo(
+            type="income_evolution",
+            path=f"/charts/{path.name}",
+            description="Income mean and volatility evolution over life trajectory"
+        ))
+    except Exception as e:
+        print(f"Warning: Failed to generate income_evolution chart: {e}")
+
+    try:
+        path = plot_event_impact_summary(trajectory)
+        charts.append(ChartInfo(
+            type="event_impact_summary",
+            path=f"/charts/{path.name}",
+            description="Summary of life event impacts by category"
+        ))
+    except Exception as e:
+        print(f"Warning: Failed to generate event_impact_summary chart: {e}")
     
     return charts
 

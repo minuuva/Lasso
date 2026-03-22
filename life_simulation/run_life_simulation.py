@@ -4,7 +4,7 @@ Run Life Simulation - Integration entry point for Layer 1 + Layer 2.
 Connects life trajectory generation with Monte Carlo execution.
 """
 
-from typing import Optional
+from typing import Optional, Any, Dict
 import sys
 import os
 
@@ -31,6 +31,7 @@ from src.integration.profile_builder import (
     CustomerApplication
 )
 from src.engine.monte_carlo import run_simulation, load_and_prepare
+from src.ai.scenario_parser import parse_ai_scenario
 
 
 def run_full_life_simulation(
@@ -39,7 +40,8 @@ def run_full_life_simulation(
     loan_config: LoanConfig,
     random_seed: Optional[int] = None,
     n_paths: int = 5000,
-    horizon_months: int = 24
+    horizon_months: int = 24,
+    ai_scenario: Optional[Dict[str, Any]] = None,
 ) -> SimulationResult:
     """
     Run Monte Carlo simulation with per-path life event sampling.
@@ -59,6 +61,8 @@ def run_full_life_simulation(
         random_seed: Optional seed for reproducibility (None for true randomness)
         n_paths: Number of Monte Carlo paths (default 5000)
         horizon_months: Simulation horizon in months (default 24)
+        ai_scenario: Optional raw AIScenario dict (narrative, parameter_shifts,
+            discrete_jumps) from AI / frontend; merged with path-level sampling.
     
     Returns:
         SimulationResult with realistic P(default) distribution
@@ -75,14 +79,18 @@ def run_full_life_simulation(
     )
     
     load = load_and_prepare(profile, config)
+
+    parsed_scenario = None
+    if ai_scenario:
+        parsed_scenario = parse_ai_scenario(ai_scenario, horizon_months)
     
-    # Pass archetype data for per-path event sampling
+    # Pass archetype data for per-path event sampling; optional AIScenario stress overlay
     result = run_simulation(
         profile, 
         config, 
         loan_config, 
         load,
-        scenario=None,  # No longer using scenario-based events
+        scenario=parsed_scenario,
         archetype_data=archetype_data
     )
     

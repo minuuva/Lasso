@@ -2,7 +2,7 @@
 Pydantic models for API request/response schemas.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 
 
@@ -20,18 +20,6 @@ class UserData(BaseModel):
     liquid_savings: Optional[float] = Field(None, ge=0, description="Cash savings")
     monthly_fixed_expenses: Optional[float] = Field(None, ge=0, description="Monthly fixed expenses")
     existing_debt_obligations: Optional[float] = Field(None, ge=0, description="Monthly debt payments")
-    credit_score_range: Optional[List[int]] = Field(None, description="Credit score range [min, max]")
-    
-    @validator('credit_score_range')
-    def validate_credit_score(cls, v):
-        if v is not None:
-            if len(v) != 2:
-                raise ValueError("credit_score_range must have exactly 2 elements")
-            if not (300 <= v[0] <= 850 and 300 <= v[1] <= 850):
-                raise ValueError("Credit scores must be between 300 and 850")
-            if v[0] > v[1]:
-                raise ValueError("Min credit score must be <= max credit score")
-        return v
 
 
 class LoanPreferences(BaseModel):
@@ -52,6 +40,10 @@ class SimulateRequest(BaseModel):
     use_archetype: Optional[str] = Field(None, description="Pre-defined archetype to use")
     random_seed: Optional[int] = Field(42, description="Random seed for reproducibility")
     generate_charts: bool = Field(True, description="Generate visualization charts")
+    structured_scenario: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Optional AIScenario from frontend/Claude (narrative, parameter_shifts, discrete_jumps)",
+    )
 
 
 class CompareRequest(BaseModel):

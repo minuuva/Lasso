@@ -613,7 +613,7 @@ export function HeroSection() {
               {/* Subtitle - improved hierarchy */}
               <div ref={subtitleRef} className="max-w-lg mb-12">
                 <p className="text-xl text-white/40 leading-relaxed font-light">
-                  Monte Carlo simulations reveal what FICO misses—
+                  Monte Carlo simulations capture what flat credit files miss—
                   <span className="text-white/70 font-normal">
                     giving your team the tools to assess gig economy applicants with precision.
                   </span>

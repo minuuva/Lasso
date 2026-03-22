@@ -61,7 +61,6 @@ export interface GigWorkerProfile {
   monthlyRent: number;
   monthlyFixedExpenses: number; // insurance, phone, subscriptions
   currentSavings: number;
-  creditScore: number; // 300-850, for FICO comparison
   dependents: number;
 }
 
@@ -78,7 +77,6 @@ export const DEFAULT_PROFILE: GigWorkerProfile = {
   monthlyRent: 1500,
   monthlyFixedExpenses: 500,
   currentSavings: 3000,
-  creditScore: 660,
   dependents: 0,
 };
 
@@ -92,6 +90,5 @@ export const PROFILE_CONSTRAINTS = {
   monthlyRent: { min: 0, max: 10000 },
   monthlyFixedExpenses: { min: 0, max: 10000 },
   currentSavings: { min: 0, max: 500000 },
-  creditScore: { min: 300, max: 850 },
   dependents: { min: 0, max: 10 },
 };

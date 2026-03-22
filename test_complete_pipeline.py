@@ -217,7 +217,6 @@ if __name__ == "__main__":
         
         # Optional params
         loan_rate=0.12,
-        credit_score_range=(630, 670),
         metro_area="national",
         months_experience=15,
         has_vehicle=True,
