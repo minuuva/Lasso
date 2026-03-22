@@ -520,8 +520,22 @@ export default function SimulateHub() {
     const hoursPerPlatform = platforms.length > 0 ? (params.hoursPerWeek || 0) / platforms.length : 0;
     const tenure = params.monthsExperience || 0;
 
+    // Map platform display names to snake_case backend names
+    const platformNameMap: Record<string, string> = {
+      "Uber": "uber",
+      "Lyft": "lyft",
+      "DoorDash": "doordash",
+      "UberEats": "uber_eats",
+      "Instacart": "instacart",
+      "Grubhub": "grubhub",
+      "Postmates": "postmates",
+      "Amazon Flex": "amazon_flex",
+      "Shipt": "shipt",
+      "TaskRabbit": "taskrabbit",
+    };
+
     const platformsAndHours = platforms.map((p) => [
-      p.toLowerCase(),
+      platformNameMap[p] || p.toLowerCase().replace(/\s+/g, "_"),
       hoursPerPlatform,
       tenure,
     ]);
@@ -541,42 +555,17 @@ export default function SimulateHub() {
       acceptable_rate_range: [0.08, 0.20],
     };
 
-    // Log to console for your team to pick up
+    // Log to console for debugging
     console.log("=== CUSTOMER APPLICATION ===");
     console.log(JSON.stringify(customerApplication, null, 2));
     console.log("============================");
 
-    // Format for display (Python-like)
-    const pythonFormat = `CustomerApplication(
-    platforms_and_hours=[
-${platformsAndHours.map((p) => `        ('${p[0]}', ${Number(p[1]).toFixed(1)}, ${p[2]})`).join(",\n")}
-    ],
-    metro_area='${metroArea}',
-    months_as_gig_worker=${params.monthsExperience},
-    has_vehicle=${params.hasVehicle ? "True" : "False"},
-    has_dependents=${params.hasDependents ? "True" : "False"},
-    liquid_savings=${params.liquidSavings},
-    monthly_fixed_expenses=${params.monthlyExpenses},
-    existing_debt_obligations=${params.existingDebt},
-    loan_request_amount=${params.loanAmount},
-    requested_term_months=${termMonths},
-    acceptable_rate_range=(0.08, 0.20)
-)`;
-
     const successMessage: Message = {
       id: generateId(),
       role: "assistant",
-      content: `## All Data Collected
+      content: `## Application Complete
 
-All 11 required data points have been gathered. The application bundle is ready for AI Layer processing.
-
-\`\`\`python
-${pythonFormat}
-\`\`\`
-
-**Ready for AI Layer & Monte Carlo simulation.**
-
-Next: use the input below to describe optional macro or life events and layer structured shocks on this applicant.**`,
+All required information has been collected. Running Monte Carlo simulation to assess your loan risk profile...`,
       timestamp: new Date(),
       extractedParams: customerApplication as unknown as Record<string, unknown>,
     };
