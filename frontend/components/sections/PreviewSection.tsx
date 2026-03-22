@@ -78,7 +78,7 @@ export function PreviewSection() {
       gsap.from(".preview-content", {
         scrollTrigger: {
           trigger: sectionRef.current,
-          start: "top 60%",
+          start: "top 80%",
         },
         opacity: 0,
         y: 60,
@@ -93,7 +93,7 @@ export function PreviewSection() {
   return (
     <section
       ref={sectionRef}
-      className="relative w-full py-24 px-8 md:px-16 lg:px-24"
+      className="relative w-full pt-12 pb-12 px-8 md:px-16 lg:px-24"
     >
       <div className="preview-content">
         {/* Section label */}

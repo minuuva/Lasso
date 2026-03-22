@@ -1,4 +1,4 @@
-numpy
-scipy
-dataclasses
-python-dateutil
+# Monte Carlo simulation dependencies
+numpy>=1.24.0
+scipy>=1.10.0
+python-dateutil>=2.8.0

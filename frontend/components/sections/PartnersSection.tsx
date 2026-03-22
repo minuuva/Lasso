@@ -39,8 +39,8 @@ export function PartnersSection() {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
-          start: "top 60%",
-          toggleActions: "play none none reverse",
+          start: "top 80%",
+          toggleActions: "play none none none",
         },
       });
 
@@ -75,7 +75,7 @@ export function PartnersSection() {
       gsap.from(".partner-name", {
         scrollTrigger: {
           trigger: partnersRef.current,
-          start: "top 70%",
+          start: "top 85%",
         },
         opacity: 0,
         y: 20,
@@ -90,8 +90,9 @@ export function PartnersSection() {
 
   return (
     <section
+      id="partners"
       ref={sectionRef}
-      className="relative w-full py-32 px-8 md:px-16 lg:px-24 overflow-hidden"
+      className="relative w-full pt-12 pb-16 px-8 md:px-16 lg:px-24 overflow-hidden"
     >
       {/* Background glow */}
       <div className="absolute inset-0 pointer-events-none">

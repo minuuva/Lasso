@@ -25,7 +25,7 @@ export function ManifestoSection() {
       gsap.to(titleRef.current, {
         scrollTrigger: {
           trigger: sectionRef.current,
-          start: "top 70%",
+          start: "top 85%",
         },
         opacity: 1,
         y: 0,
@@ -38,8 +38,8 @@ export function ManifestoSection() {
 
       ScrollTrigger.create({
         trigger: sectionRef.current,
-        start: "top 70%",
-        end: "top 10%",
+        start: "top 85%",
+        end: "top 20%",
         scrub: 0.3,
         onUpdate: (self) => {
           const progress = self.progress;
@@ -63,27 +63,25 @@ export function ManifestoSection() {
         },
       });
 
-      // Values section animation
-      gsap.set(valuesRef.current, { opacity: 0, y: 60 });
+      // Values section animation - only animate y position, not opacity
+      gsap.set(valuesRef.current, { y: 40 });
 
       gsap.to(valuesRef.current, {
         scrollTrigger: {
           trigger: valuesRef.current,
-          start: "top 80%",
+          start: "top 90%",
         },
-        opacity: 1,
         y: 0,
         duration: 1,
         ease: "power3.out",
       });
 
-      // Stagger value cards
+      // Stagger value cards - only animate x position, not opacity
       gsap.from(".value-card", {
         scrollTrigger: {
           trigger: valuesRef.current,
-          start: "top 70%",
+          start: "top 90%",
         },
-        opacity: 0,
         x: -30,
         stagger: 0.2,
         duration: 0.8,
@@ -117,8 +115,9 @@ export function ManifestoSection() {
 
   return (
     <section
+      id="manifesto"
       ref={sectionRef}
-      className="relative w-full py-24 px-8 md:px-16 lg:px-24 overflow-hidden"
+      className="relative w-full pt-12 pb-12 px-8 md:px-16 lg:px-24 overflow-hidden"
     >
       {/* Background gradients - Stripe Sessions style */}
       <div className="absolute inset-0 pointer-events-none">
@@ -134,12 +133,12 @@ export function ManifestoSection() {
       </div>
 
       {/* Section label - Tempo style */}
-      <div ref={titleRef} className="section-label mb-16">
+      <div ref={titleRef} className="section-label mb-8">
         <span>Manifesto</span>
       </div>
 
       {/* Main manifesto text - word by word reveal with gradient */}
-      <div className="max-w-5xl mb-32">
+      <div className="max-w-5xl mb-12">
         <p className="font-display text-3xl md:text-4xl lg:text-5xl xl:text-[3.5rem] font-semibold leading-[1.25] tracking-[-0.02em]">
           {words.map((word, index) => (
             <span key={index}>
@@ -160,19 +159,19 @@ export function ManifestoSection() {
 
       {/* Value pillars - Enhanced design */}
       <div ref={valuesRef} className="grid md:grid-cols-3 gap-0">
-        {values.map((value, idx) => (
+        {values.map((value) => (
           <div
             key={value.number}
             className="value-card numbered-card group"
             data-number={value.number}
           >
             {/* Title */}
-            <h3 className="font-display text-xl font-bold tracking-[0.08em] text-white/80 group-hover:text-gradient-accent transition-all duration-500 mb-5">
+            <h3 className="font-display text-xl font-bold tracking-[0.08em] text-white group-hover:text-gradient-accent transition-all duration-500 mb-5">
               {value.title}
             </h3>
 
             {/* Description */}
-            <p className="text-[15px] text-white/35 leading-relaxed group-hover:text-white/50 transition-colors duration-500">
+            <p className="text-[15px] text-white/60 leading-relaxed group-hover:text-white/80 transition-colors duration-500">
               {value.description}
             </p>
 

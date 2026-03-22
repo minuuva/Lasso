@@ -20,8 +20,8 @@ export function AISection() {
       gsap.to(contentRef.current, {
         scrollTrigger: {
           trigger: sectionRef.current,
-          start: "top 60%",
-          toggleActions: "play none none reverse",
+          start: "top 80%",
+          toggleActions: "play none none none",
         },
         opacity: 1,
         y: 0,
@@ -36,7 +36,7 @@ export function AISection() {
   return (
     <section
       ref={sectionRef}
-      className="relative w-full py-24 px-8 md:px-16 lg:px-24 overflow-hidden"
+      className="relative w-full pt-12 pb-12 px-8 md:px-16 lg:px-24 overflow-hidden"
     >
       {/* Glowing platform effect - Reflect style with smooth transitions */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">

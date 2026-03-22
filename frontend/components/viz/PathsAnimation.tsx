@@ -80,9 +80,9 @@ export function PathsAnimation({ className = "" }: { className?: string }) {
     const tl = gsap.timeline({
       scrollTrigger: {
         trigger: containerRef.current,
-        start: "top 60%",
-        end: "center center",
-        scrub: 1,
+        start: "top 85%",
+        end: "top 30%",
+        scrub: 0.5,
       },
     });
 

@@ -29,9 +29,9 @@ export function ProblemSection() {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
-          start: "top 60%",
+          start: "top 80%",
           end: "center center",
-          toggleActions: "play none none reverse",
+          toggleActions: "play none none none",
         },
       });
 
@@ -79,7 +79,7 @@ export function ProblemSection() {
   return (
     <section
       ref={sectionRef}
-      className="relative w-full py-24 px-8 md:px-16 lg:px-24 flex flex-col justify-center overflow-hidden"
+      className="relative w-full pt-16 pb-12 px-8 md:px-16 lg:px-24 flex flex-col justify-center overflow-hidden"
     >
       {/* Background gradient accent */}
       <div
@@ -108,7 +108,7 @@ export function ProblemSection() {
       {/* Subline */}
       <p
         ref={sublineRef}
-        className="max-w-xl text-xl text-white/40 leading-relaxed mb-20 font-light"
+        className="max-w-xl text-xl text-white/40 leading-relaxed mb-12 font-light"
       >
         Traditional credit models assume stable paychecks.{" "}
         <span className="text-white/70 font-normal">
@@ -117,7 +117,7 @@ export function ProblemSection() {
       </p>
 
       {/* Income Chart - in a glass card */}
-      <div ref={chartRef} className="max-w-4xl mb-20">
+      <div ref={chartRef} className="max-w-4xl mb-12">
         <div className="glass-card-premium p-8">
           <IncomeChart />
         </div>
@@ -150,7 +150,7 @@ export function ProblemSection() {
 
         {/* Stat 3: FICO blind */}
         <div className="numbered-card" data-number="03">
-          <div className="text-5xl md:text-6xl font-display font-bold text-white/50 mb-3">
+          <div className="text-5xl md:text-6xl font-display font-bold text-gradient-fade mb-3">
             <CountUp end={0} suffix="%" />
           </div>
           <div className="text-sm text-white/40 leading-relaxed">

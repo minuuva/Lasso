@@ -60,8 +60,8 @@ export function HowItWorksSection() {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
-          start: "top 60%",
-          toggleActions: "play none none reverse",
+          start: "top 80%",
+          toggleActions: "play none none none",
         },
       });
 
@@ -96,7 +96,7 @@ export function HowItWorksSection() {
       gsap.from(".step-card", {
         scrollTrigger: {
           trigger: stepsRef.current,
-          start: "top 70%",
+          start: "top 85%",
         },
         opacity: 0,
         y: 40,
@@ -111,8 +111,9 @@ export function HowItWorksSection() {
 
   return (
     <section
+      id="how-it-works"
       ref={sectionRef}
-      className="relative w-full py-24 px-8 md:px-16 lg:px-24 overflow-hidden"
+      className="relative w-full pt-12 pb-12 px-8 md:px-16 lg:px-24 overflow-hidden"
     >
       {/* Background gradient */}
       <div
@@ -130,7 +131,7 @@ export function HowItWorksSection() {
       {/* Main headline */}
       <h2
         ref={headlineRef}
-        className="font-display text-4xl md:text-5xl lg:text-[4rem] font-bold leading-[1.05] tracking-[-0.03em] mb-20"
+        className="font-display text-4xl md:text-5xl lg:text-[4rem] font-bold leading-[1.05] tracking-[-0.03em] mb-12"
       >
         <span className="text-white">We simulate</span>
         <br />
@@ -138,7 +139,7 @@ export function HowItWorksSection() {
       </h2>
 
       {/* Two-column layout */}
-      <div className="grid lg:grid-cols-2 gap-20 items-start max-w-7xl">
+      <div className="grid lg:grid-cols-2 gap-12 items-start max-w-7xl">
         {/* Paths visualization - in glass card */}
         <div ref={vizRef} className="order-2 lg:order-1">
           <div className="glass-card-premium p-6 md:p-8">

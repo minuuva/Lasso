@@ -556,13 +556,17 @@ export function HeroSection() {
           {/* Pill-shaped nav - Reflect style */}
           <nav className="hidden md:flex items-center">
             <div className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm">
-              {["Platform", "Research", "Enterprise"].map((item) => (
+              {[
+                { label: "Platform", href: "#how-it-works" },
+                { label: "Research", href: "#manifesto" },
+                { label: "Enterprise", href: "#partners" },
+              ].map((item) => (
                 <a
-                  key={item}
-                  href="#"
+                  key={item.label}
+                  href={item.href}
                   className="px-4 py-2 text-white/50 hover:text-white text-sm font-medium transition-all duration-300 rounded-full hover:bg-white/[0.05]"
                 >
-                  {item}
+                  {item.label}
                 </a>
               ))}
             </div>
@@ -576,7 +580,7 @@ export function HeroSection() {
               href="/simulate"
               className="px-5 py-2.5 bg-white text-black text-sm font-semibold rounded-full hover:bg-white/90 transition-all duration-300 hover:scale-[1.02]"
             >
-              Request Demo
+              Risk Console
             </Link>
           </div>
         </header>
@@ -634,15 +638,6 @@ export function HeroSection() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </Link>
-                <button className="btn-secondary group">
-                  <span>Schedule Demo</span>
-                  <svg className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                </button>
                 <span className="text-xs text-white/20 font-medium tracking-wide ml-2">
                   HooHacks 2026
                 </span>
