@@ -10,6 +10,10 @@ from pathlib import Path
 from typing import List
 import time
 
+# Load environment variables BEFORE any other imports
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from fastapi import FastAPI, HTTPException, status
