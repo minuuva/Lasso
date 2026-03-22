@@ -36,7 +36,7 @@ class InputValidator:
     
     VALID_PLATFORMS = [
         "uber", "lyft", "doordash", "instacart", "grubhub",
-        "postmates", "shipt", "favor", "gopuff"
+        "postmates", "shipt", "favor", "gopuff", "uber_eats", "ubereats"
     ]
     
     VALID_METRO_AREAS = [

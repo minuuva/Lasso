@@ -297,10 +297,9 @@ interface ExtractedParams {
 
 // Loan officer user (the actual user of this tool)
 const LOAN_OFFICER = {
-  name: "Sarah Chen",
-  role: "Senior Loan Officer",
-  avatar: "SC",
-  institution: "Capital One",
+  name: "Hoo Hacker",
+  role: "Risk Analyst",
+  avatar: "HH",
 };
 
 const INITIAL_CHATS: Chat[] = [];
@@ -1246,10 +1245,7 @@ Results will appear below in just a moment...`,
               <div className="text-[10px] text-white/40">{LOAN_OFFICER.role}</div>
             </div>
           </div>
-          <div className="mt-2 px-3">
-            <div className="text-[10px] text-white/30">{LOAN_OFFICER.institution}</div>
           </div>
-        </div>
       </aside>
 
       {/* Main Content */}
