@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from pathlib import Path
 from typing import Optional, List, Tuple
 
@@ -55,9 +56,10 @@ def plot_default_timing_analysis(
         ax1.set_ylabel('Percentile', fontsize=11)
         ax1.set_title('When Defaults Occur (Among Defaulting Paths)', fontsize=13, fontweight='bold')
         ax1.grid(True, alpha=0.3, axis='x')
-        
+        ax1.xaxis.set_major_locator(MaxNLocator(integer=True))
+
         for i, (label, value) in enumerate(zip(perc_names, perc_values)):
-            ax1.text(value, i, f'  M{value:.1f}', va='center', fontweight='bold')
+            ax1.text(value, i, f'  Month {int(round(value))}', va='center', fontweight='bold')
         
         default_prob = result.p_default
         ax1.text(0.02, 0.98, f'Overall P(default): {default_prob:.1%}',
@@ -139,6 +141,7 @@ def plot_risk_summary_card(
     ax1.set_ylabel('Income ($)')
     ax1.legend()
     ax1.grid(True, alpha=0.3)
+    ax1.xaxis.set_major_locator(MaxNLocator(integer=True))
     
     ax2 = fig.add_subplot(gs[1, 1])
     month0_income = result.raw_paths[:, 0]

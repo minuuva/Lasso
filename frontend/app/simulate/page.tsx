@@ -58,22 +58,56 @@ function formatAiSimulationForMessage(data: AiLayerSimulateResponse, ok: boolean
   if (!data.metrics) {
     return "**Unexpected response** from AI layer.";
   }
-  // Use quick_summary for a shorter, more concise output
-  const summaryText = data.quick_summary || data.summary || "";
+
+  const m = data.metrics;
+  const pDefault = m.p_default * 100;
+  const riskTier = m.risk_tier?.toLowerCase() || "unknown";
+
+  // Risk tier interpretation
+  const riskInterpretation =
+    riskTier === "low_risk" ? "Your financial profile indicates strong repayment capacity with minimal default risk." :
+    riskTier === "medium_risk" ? "Your profile shows moderate risk factors. Loan approval is likely with standard terms." :
+    riskTier === "high_risk" ? "Your profile indicates elevated risk. Consider a smaller loan amount or longer term to improve approval odds." :
+    "Risk assessment complete.";
+
+  // Use full summary for detailed output
+  const summaryText = data.summary || data.quick_summary || "";
+
   const lines = [
-    "## Risk Assessment",
+    "## Risk Assessment Complete",
+    "",
+    `Our Monte Carlo simulation analyzed **5,000 possible income scenarios** over the loan term to assess your repayment capacity.`,
+    "",
+    "---",
+    "",
+    "### Summary",
     "",
     summaryText,
     "",
-    "### Key Metrics",
+    "---",
     "",
-    `| Metric | Value |`,
-    `|--------|-------|`,
-    `| Default Probability | **${(data.metrics.p_default * 100).toFixed(1)}%** |`,
-    `| Expected Loss | **$${formatNumber(Math.round(data.metrics.expected_loss))}** |`,
-    `| CVaR (95%) | **$${formatNumber(Math.round(data.metrics.cvar_95))}** |`,
-    `| Risk Tier | **${data.metrics.risk_tier}** |`,
+    "### Key Risk Metrics",
+    "",
+    `| Metric | Value | What It Means |`,
+    `|--------|-------|---------------|`,
+    `| **Default Probability** | ${pDefault.toFixed(1)}% | Likelihood of missed payments based on income volatility |`,
+    `| **Expected Loss** | $${formatNumber(Math.round(m.expected_loss))} | Average loss if default occurs |`,
+    `| **CVaR (95%)** | $${formatNumber(Math.round(m.cvar_95))} | Worst-case loss in 95% of scenarios |`,
+    `| **Risk Tier** | ${riskTier.replace("_", " ")} | Overall risk classification |`,
+    "",
+    "---",
+    "",
+    "### What This Means For You",
+    "",
+    riskInterpretation,
+    "",
+    pDefault < 10
+      ? "With a default probability under 10%, you're well-positioned for favorable loan terms."
+      : pDefault < 30
+        ? "A default probability between 10-30% suggests some income volatility. Building additional savings could improve your terms."
+        : "A higher default probability indicates significant income variability. Consider requesting a smaller loan amount or providing additional income documentation.",
   ];
+
   return lines.filter(Boolean).join("\n");
 }
 

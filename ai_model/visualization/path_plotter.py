@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from pathlib import Path
 from typing import Optional
 
@@ -68,7 +69,11 @@ def plot_income_paths(
     ax.set_ylabel('Monthly Income ($)', fontsize=12)
     ax.legend(fontsize=11, loc='best')
     ax.grid(True, alpha=0.3)
-    
+
+    # Set x-axis to use integer ticks only
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.set_xlim(0, n_months - 1)
+
     plt.tight_layout()
     plt.savefig(output_path, dpi=150, bbox_inches='tight')
     plt.close()
@@ -191,9 +196,13 @@ def plot_net_cash_flow(
     ax.set_ylabel('Net Cash Flow ($)', fontsize=12)
     ax.legend(fontsize=11)
     ax.grid(True, alpha=0.3)
-    
+
+    # Set x-axis to use integer ticks only
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.set_xlim(0, result.raw_paths.shape[1] - 1)
+
     plt.tight_layout()
     plt.savefig(output_path, dpi=150, bbox_inches='tight')
     plt.close()
-    
+
     return output_path
