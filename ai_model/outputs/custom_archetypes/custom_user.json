@@ -24,8 +24,8 @@
     "housing_instability_probability": 0.9,
     "positive_event_probability": 0.9
   },
-  "emergency_fund_weeks": 12,
-  "debt_to_income_ratio": 0.0,
+  "emergency_fund_weeks": 6,
+  "debt_to_income_ratio": 0.062197564343380314,
   "default_risk_category": "low",
   "recommended_loan_amount_range": [
     9646,
