@@ -141,8 +141,6 @@ function metroEnumToApi(m: MetroArea): string {
     [MetroArea.NEW_YORK]: "new_york",
     [MetroArea.LOS_ANGELES]: "national",
     [MetroArea.CHICAGO]: "national",
-    [MetroArea.ATLANTA]: "atlanta",
-    [MetroArea.DALLAS]: "dallas",
     [MetroArea.WASHINGTON_DC]: "national",
     [MetroArea.RICHMOND]: "national",
   };
