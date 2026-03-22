@@ -622,7 +622,7 @@ export default function SimulateHub() {
     };
     const termMonths = typeof params.loanTermMonths === "string"
       ? termMonthsMap[params.loanTermMonths] || 24
-      : params.loanTermMonths;
+      : params.loanTermMonths ?? 24;
 
     // Convert metro area to snake_case
     const metroAreaMap: Record<string, string> = {
