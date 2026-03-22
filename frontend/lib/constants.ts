@@ -79,7 +79,7 @@ export const PLATFORM_BASE_RATES: Record<
   { mean: number; std: number; type: "delivery" | "rideshare" | "general_gig" }
 > = {
   uber_rideshare: { mean: 23.33, std: 5.0, type: "rideshare" },
-  uber_eats: { mean: 18.0, std: 6.0, type: "delivery" },
+  ubereats: { mean: 18.0, std: 6.0, type: "delivery" },
   doordash: { mean: 17.5, std: 5.5, type: "delivery" },
   instacart: { mean: 19.0, std: 5.0, type: "delivery" },
   lyft: { mean: 21.0, std: 5.0, type: "rideshare" },
