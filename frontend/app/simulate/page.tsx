@@ -63,52 +63,169 @@ function formatAiSimulationForMessage(data: AiLayerSimulateResponse, ok: boolean
   const pDefault = m.p_default * 100;
   const riskTier = m.risk_tier?.toLowerCase() || "unknown";
 
-  // Risk tier interpretation
-  const riskInterpretation =
-    riskTier === "low_risk" ? "Your financial profile indicates strong repayment capacity with minimal default risk." :
-    riskTier === "medium_risk" ? "Your profile shows moderate risk factors. Loan approval is likely with standard terms." :
-    riskTier === "high_risk" ? "Your profile indicates elevated risk. Consider a smaller loan amount or longer term to improve approval odds." :
-    "Risk assessment complete.";
+  // Risk tier styling and classification
+  const riskTierDisplay = riskTier.replace(/_/g, " ").toUpperCase();
+  const riskTierEmphasis =
+    riskTier === "low_risk" ? "favorable" :
+    riskTier === "medium_risk" ? "moderate" :
+    riskTier === "high_risk" ? "elevated" : "assessed";
 
-  // Use full summary for detailed output
+  // Extract archetype info if available
+  const archetype = data.archetype_info as Record<string, unknown> | undefined;
+  const archetypeName = archetype?.name as string | undefined;
+  const baseIncome = archetype?.base_mu as number | undefined;
+  const incomeVolatility = archetype?.income_volatility as number | undefined;
+
+  // Extract trajectory info if available
+  const trajectory = data.trajectory_info as Record<string, unknown> | undefined;
+  const lifeEvents = trajectory?.events as Array<Record<string, unknown>> | undefined;
+  const significantEvents = lifeEvents?.filter(e =>
+    (e.event_type as string)?.includes("shock") ||
+    (e.magnitude as number) > 0.1 ||
+    (e.magnitude as number) < -0.1
+  );
+
+  // Build the comprehensive summary
+  const lines: string[] = [];
+
+  // Header with risk classification badge
+  lines.push("## Risk Assessment Report");
+  lines.push("");
+  lines.push(`**Classification:** ${riskTierDisplay}`);
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+
+  // Executive Summary Section
+  lines.push("### Executive Summary");
+  lines.push("");
+  lines.push(`This assessment analyzed **5,000 Monte Carlo simulations** to project income trajectories and repayment capacity over the loan term. The applicant demonstrates ${riskTierEmphasis} risk characteristics based on platform earnings patterns, expense obligations, and financial resilience factors.`);
+  lines.push("");
+
+  // Add the AI-generated summary if available
   const summaryText = data.summary || data.quick_summary || "";
+  if (summaryText && summaryText.length > 20) {
+    lines.push(summaryText);
+    lines.push("");
+  }
 
-  const lines = [
-    "## Risk Assessment Complete",
-    "",
-    `Our Monte Carlo simulation analyzed **5,000 possible income scenarios** over the loan term to assess your repayment capacity.`,
-    "",
-    "---",
-    "",
-    "### Summary",
-    "",
-    summaryText,
-    "",
-    "---",
-    "",
-    "### Key Risk Metrics",
-    "",
-    `| Metric | Value | What It Means |`,
-    `|--------|-------|---------------|`,
-    `| **Default Probability** | ${pDefault.toFixed(1)}% | Likelihood of missed payments based on income volatility |`,
-    `| **Expected Loss** | $${formatNumber(Math.round(m.expected_loss))} | Average loss if default occurs |`,
-    `| **CVaR (95%)** | $${formatNumber(Math.round(m.cvar_95))} | Worst-case loss in 95% of scenarios |`,
-    `| **Risk Tier** | ${riskTier.replace("_", " ")} | Overall risk classification |`,
-    "",
-    "---",
-    "",
-    "### What This Means For You",
-    "",
-    riskInterpretation,
-    "",
-    pDefault < 10
-      ? "With a default probability under 10%, you're well-positioned for favorable loan terms."
-      : pDefault < 30
-        ? "A default probability between 10-30% suggests some income volatility. Building additional savings could improve your terms."
-        : "A higher default probability indicates significant income variability. Consider requesting a smaller loan amount or providing additional income documentation.",
-  ];
+  lines.push("---");
+  lines.push("");
 
-  return lines.filter(Boolean).join("\n");
+  // Financial Profile Section
+  lines.push("### Applicant Financial Profile");
+  lines.push("");
+  if (archetypeName) {
+    lines.push(`**Worker Classification:** ${archetypeName}`);
+  }
+  if (baseIncome) {
+    lines.push(`**Estimated Base Income:** $${formatNumber(Math.round(baseIncome))}/month`);
+  }
+  if (incomeVolatility !== undefined) {
+    const volatilityDesc =
+      incomeVolatility < 0.15 ? "Low" :
+      incomeVolatility < 0.25 ? "Moderate" :
+      incomeVolatility < 0.35 ? "High" : "Very High";
+    lines.push(`**Income Volatility:** ${volatilityDesc} (${(incomeVolatility * 100).toFixed(0)}% coefficient of variation)`);
+  }
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+
+  // Risk Metrics Section - Clean table format
+  lines.push("### Quantitative Risk Metrics");
+  lines.push("");
+  lines.push("| Metric | Value | Interpretation |");
+  lines.push("|:-------|:------|:---------------|");
+  lines.push(`| **Default Probability** | ${pDefault.toFixed(1)}% | ${pDefault < 10 ? "Low likelihood of missed payments" : pDefault < 25 ? "Moderate payment risk" : "Elevated payment risk"} |`);
+  lines.push(`| **Expected Loss** | $${formatNumber(Math.round(m.expected_loss))} | ${m.expected_loss < 500 ? "Minimal exposure" : m.expected_loss < 2000 ? "Manageable exposure" : "Significant exposure"} |`);
+  lines.push(`| **CVaR 95%** | $${formatNumber(Math.round(m.cvar_95))} | Worst-case scenario in top 5% of losses |`);
+  lines.push(`| **Risk Classification** | ${riskTierDisplay} | Overall creditworthiness tier |`);
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+
+  // Life Events & Risk Factors Section
+  if (significantEvents && significantEvents.length > 0) {
+    lines.push("### Projected Life Events Considered");
+    lines.push("");
+    lines.push("The simulation incorporated the following potential income-affecting events:");
+    lines.push("");
+    significantEvents.slice(0, 5).forEach(event => {
+      const eventType = (event.event_type as string || "event").replace(/_/g, " ");
+      const month = event.month as number;
+      const magnitude = event.magnitude as number;
+      const impact = magnitude > 0 ? "positive" : "negative";
+      const impactPct = Math.abs(magnitude * 100).toFixed(0);
+      lines.push(`- **${eventType}** at month ${month}: ${impactPct}% ${impact} impact on income`);
+    });
+    lines.push("");
+    lines.push("---");
+    lines.push("");
+  }
+
+  // Key Risk Drivers Section
+  lines.push("### Key Risk Drivers");
+  lines.push("");
+
+  // Determine primary risk factors based on metrics
+  const riskDrivers: string[] = [];
+
+  if (pDefault >= 25) {
+    riskDrivers.push("**Income Volatility** — High variability in projected earnings increases payment uncertainty");
+  }
+  if (m.expected_loss > 1500) {
+    riskDrivers.push("**Exposure Level** — Loan amount relative to income creates meaningful loss potential");
+  }
+  if (incomeVolatility && incomeVolatility > 0.25) {
+    riskDrivers.push("**Platform Dependency** — Single or volatile platform income streams");
+  }
+  if (m.cvar_95 > m.expected_loss * 3) {
+    riskDrivers.push("**Tail Risk** — Significant gap between average and worst-case outcomes");
+  }
+
+  if (riskDrivers.length === 0) {
+    riskDrivers.push("**Stable Income Pattern** — Consistent projected earnings across scenarios");
+    riskDrivers.push("**Adequate Reserves** — Financial cushion supports payment continuity");
+  }
+
+  riskDrivers.forEach(driver => lines.push(`- ${driver}`));
+  lines.push("");
+  lines.push("---");
+  lines.push("");
+
+  // Assessment Conclusion Section
+  lines.push("### Assessment Conclusion");
+  lines.push("");
+
+  if (riskTier === "low_risk") {
+    lines.push("This applicant presents a **strong credit profile** for gig economy lending. The combination of stable projected income, manageable expense ratios, and financial resilience indicators supports favorable loan terms.");
+    lines.push("");
+    lines.push("**Recommendation:** Standard approval with competitive rate offerings.");
+  } else if (riskTier === "medium_risk") {
+    lines.push("This applicant presents a **moderate credit profile** with acceptable risk characteristics. While income projections show some variability, the overall financial picture supports cautious approval.");
+    lines.push("");
+    lines.push("**Recommendation:** Approval with standard terms. Consider income verification or reduced initial amount.");
+  } else if (riskTier === "high_risk") {
+    lines.push("This applicant presents an **elevated risk profile** requiring careful consideration. Income volatility and financial stress indicators suggest heightened default potential.");
+    lines.push("");
+    lines.push("**Recommendation:** Consider structured approval with smaller loan amount, shorter term, or additional collateral requirements.");
+  } else {
+    lines.push("Risk assessment complete. Review the metrics above to inform lending decision.");
+  }
+  lines.push("");
+
+  // Warnings if any
+  if (data.warnings && data.warnings.length > 0) {
+    lines.push("---");
+    lines.push("");
+    lines.push("### Notes");
+    lines.push("");
+    data.warnings.forEach(w => lines.push(`- ${w}`));
+    lines.push("");
+  }
+
+  return lines.join("\n");
 }
 
 interface ParameterQuestion {
