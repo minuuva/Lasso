@@ -1,4 +1,4 @@
-# VarLend - Variable Income Lending Risk Assessment
+# Lasso - Variable Income Lending Risk Assessment
 
 AI-powered loan risk assessment system for gig economy workers with variable income streams.
 
